@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env/
+venv/
+.venv/
+env/
+myenv/
+*.egg-info/
+
+# OS junk
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Tools
+.pytest_cache/
+.mypy_cache/
+
+# Project outputs
+output/
