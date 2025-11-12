@@ -1,32 +1,20 @@
 name: CI
-
-on:
-  push:
-  pull_request:
-
+on: [push, pull_request]
 jobs:
   tests:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pytest rouge-score pandas streamlit altair
-
+          pip install pytest rouge-score pandas streamlit altair openai
       - name: Syntax check
         run: |
-          python -m py_compile app.py scripts/run_profile.py scripts/evaluate_qa.py scripts/postprocess_quality.py scripts/export_finetune.py scripts/export_rag_qa.py scripts/compare_datasets.py
-
+          python -m py_compile app.py scripts/run_profile.py scripts/evaluate_qa.py scripts/postprocess_quality.py scripts/export_finetune.py scripts/export_rag_qa.py scripts/run_qa_eval_model.py
       - name: Run tests
-        run: |
-          pytest
+        run: pytest
