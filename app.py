@@ -10,9 +10,6 @@ import pandas as pd
 import streamlit as st
 
 
-# ---------- Data loading helpers ----------
-
-
 def load_jsonl(path: Path) -> pd.DataFrame:
     records: List[Dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -31,18 +28,13 @@ def load_jsonl(path: Path) -> pd.DataFrame:
 
 
 def find_default_dataset() -> Path | None:
-    """
-    Try to pick a reasonable default dataset file.
-    """
     candidates = [
-        # Original CLI samples
         Path("output/dataset_cli_rich.jsonl"),
         Path("output/dataset_cli_rich_200.jsonl"),
         Path("output/dataset_cli_summary_qa.jsonl"),
         Path("output/dataset_cli_summary.jsonl"),
         Path("output/dataset_real.jsonl"),
         Path("output/dataset.jsonl"),
-        # Your real paper datasets
         Path("output/papers_rich_summary_qa_300.jsonl"),
         Path("output/papers_qa_only_real_gpt4.jsonl"),
     ]
@@ -52,23 +44,15 @@ def find_default_dataset() -> Path | None:
     return None
 
 
-# ---------- Small compatibility helpers ----------
-
-
 def altair_chart_compat(chart: alt.Chart) -> None:
-    """
-    Call st.altair_chart in a way that works on both old and new Streamlit.
-
-    - Newer Streamlit: supports width="stretch".
-    - Older Streamlit: only supports use_container_width=...
-    """
+    """Compatibility wrapper for Streamlit's altair_chart API."""
     try:
-        st.altair_chart(chart, width="stretch")  # new API
+        # Newer Streamlit
+        st.altair_chart(chart, width="stretch")
     except TypeError:
-        st.altair_chart(chart, use_container_width=True)  # old API
+        # Older Streamlit
+        st.altair_chart(chart, use_container_width=True)
 
-
-# ---------- Streamlit UI ----------
 
 st.set_page_config(
     page_title="Training Data Robo – Dataset Dashboard",
@@ -81,7 +65,8 @@ st.markdown(
     "created by the `tdr` CLI."
 )
 
-# Sidebar controls
+# ---------- Dataset selection ----------
+
 st.sidebar.header("⚙️ Dataset selection")
 
 default_path = find_default_dataset()
@@ -178,6 +163,8 @@ expected_cols = [
     "temperature",
     "created_at",
     "metadata",
+    "quality_flags",
+    "quality_score",
 ]
 for col in expected_cols:
     if col not in df.columns:
@@ -273,17 +260,32 @@ if df["created_at_parsed"].notna().any():
     )
     altair_chart_compat(time_chart)
 
-# Per-task length stats
-st.markdown("#### Per-task length stats")
+# Per-task length & quality stats
+st.markdown("#### Per-task length & quality stats")
+
+# Coerce to numeric for aggregation robustness
+stats_df = df.copy()
+stats_df["input_length_num"] = pd.to_numeric(
+    stats_df["input_length"], errors="coerce"
+)
+stats_df["output_length_num"] = pd.to_numeric(
+    stats_df["output_length"], errors="coerce"
+)
+stats_df["quality_score_num"] = pd.to_numeric(
+    stats_df["quality_score"], errors="coerce"
+)
+
 per_task_stats = (
-    df.groupby("task_name")
+    stats_df.groupby("task_name", dropna=False)
     .agg(
         num_examples=("id", "count"),
-        avg_input_len=("input_length", "mean"),
-        avg_output_len=("output_length", "mean"),
+        avg_input_len=("input_length_num", "mean"),
+        avg_output_len=("output_length_num", "mean"),
+        avg_quality_score=("quality_score_num", "mean"),
     )
     .reset_index()
 )
+
 st.dataframe(per_task_stats)
 
 # ---------- Filtering & browsing ----------
@@ -350,6 +352,8 @@ display_cols = [
     "model_name",
     "task_version",
     "document_id",
+    "quality_score",
+    "quality_flags",
     "input_text",
     "output_text",
 ]
@@ -382,7 +386,7 @@ if not filtered.empty:
             mime="text/csv",
         )
 
-# ---------- Example inspector ----------
+# ---------- Single example inspector ----------
 
 st.subheader("Single example inspector")
 
@@ -402,25 +406,36 @@ else:
     st.markdown("**Chunk ID:** " + str(row.get("chunk_id", "")))
     st.markdown("**Created at:** " + str(row.get("created_at", "")))
 
-    # Show metadata if present and non-empty
-    metadata_val: Any = row.get("metadata", None)
-    display_meta: Any | None = None
+    # Quality info
+    qs = row.get("quality_score", "")
+    if isinstance(qs, (int, float)):
+        st.markdown(f"**Quality score:** {qs:.2f}")
+    elif qs != "":
+        st.markdown("**Quality score:** " + str(qs))
 
-    if isinstance(metadata_val, str):
-        if metadata_val.strip():
-            try:
-                display_meta = json.loads(metadata_val)
-            except json.JSONDecodeError:
-                display_meta = metadata_val
-    elif metadata_val not in (None, "", {}, [], ()):
-        display_meta = metadata_val
-
-    if display_meta is not None:
+    flags_val = row.get("quality_flags", [])
+    if isinstance(flags_val, str) and flags_val.strip():
         try:
-            pretty_meta = json.dumps(display_meta, indent=2, ensure_ascii=False)
-        except TypeError:
-            pretty_meta = str(display_meta)
+            parsed = json.loads(flags_val)
+            flags_val = parsed
+        except json.JSONDecodeError:
+            flags_val = [flags_val]
+    if isinstance(flags_val, list) and flags_val:
+        st.markdown("**Quality flags:** " + ", ".join(str(f) for f in flags_val))
 
+    # Metadata (pretty-printed JSON if possible)
+    metadata_val = row.get("metadata", {})
+    try:
+        if isinstance(metadata_val, str) and metadata_val.strip():
+            try:
+                metadata_val = json.loads(metadata_val)
+            except json.JSONDecodeError:
+                pass
+        pretty_meta = json.dumps(metadata_val, indent=2, ensure_ascii=False)
+    except TypeError:
+        pretty_meta = str(metadata_val)
+
+    if pretty_meta and pretty_meta != "null":
         st.markdown("##### Metadata")
         st.code(pretty_meta, language="json")
 
@@ -454,3 +469,27 @@ if {"question", "answer", "context"}.issubset(df.columns):
 
         st.markdown("**Context:**")
         st.code(str(rag_row.get("context", "")), language="markdown")
+
+# ---------- Evaluation metrics explorer ----------
+
+st.subheader("Evaluation metrics explorer")
+
+metrics_root = Path("output")
+metrics_files = sorted(metrics_root.glob("*metrics.json"))
+
+if not metrics_files:
+    st.info("No metrics JSON files found in 'output/'. Run scripts/evaluate_qa.py to generate some.")
+else:
+    label_to_path = {f.name: f for f in metrics_files}
+    selected_metrics_name = st.selectbox(
+        "Select metrics file",
+        sorted(label_to_path.keys()),
+        key="metrics_file_select",
+    )
+    metrics_path = label_to_path[selected_metrics_name]
+    try:
+        metrics_data = json.loads(metrics_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        st.error(f"Could not parse metrics file: {metrics_path}")
+    else:
+        st.json(metrics_data)
