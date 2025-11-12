@@ -1,0 +1,47 @@
+# Example task configuration file (not yet wired in).
+# Idea: later you can load this instead of hardcoding prompts in Python.
+
+tasks:
+  summary_v1:
+    type: summarisation
+    description: "Short, information-dense summary of a chunk."
+    system_prompt: |
+      You are a precise scientific writing assistant.
+      Summarise the text without adding new information.
+    user_template: |
+      Summarise the following text:
+
+      {chunk}
+
+  qa_v1:
+    type: qa
+    description: "Generate one useful question-answer pair."
+    system_prompt: |
+      You are an expert question-answer generation assistant.
+      Write a clear, specific question and a direct answer.
+    user_template: |
+      Read the following passage and generate ONE useful question and its answer.
+
+      Passage:
+
+      {chunk}
+
+  key_points_v1:
+    type: key_points
+    description: "Extract 3–5 bullet point key ideas."
+    system_prompt: |
+      You extract concise bullet point key ideas.
+    user_template: |
+      Read the following text and extract 3–5 concise bullet point key ideas.
+
+      {chunk}
+
+  title_v1:
+    type: title
+    description: "Generate a short, informative title."
+    system_prompt: |
+      You write short, clear titles for sections of academic documents.
+    user_template: |
+      Propose a short, informative title for the following text.
+
+      {chunk}

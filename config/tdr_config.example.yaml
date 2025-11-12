@@ -1,0 +1,35 @@
+# Example config for Training Data Robo (not yet wired into CLI, but ready for v2).
+
+default_model: gpt-4.1-mini
+
+defaults:
+  max_chars: 900
+  overlap: 120
+  max_examples: 300
+  temperature: 0.3
+
+tasks:
+  # Names must match the CLI task names (summary, qa, key_points, title)
+  - summary
+  - qa
+  - key_points
+  - title
+
+profiles:
+  research_papers:
+    description: "Full pipeline on academic papers"
+    source: ./Papers
+    tasks: [summary, qa, key_points, title]
+    max_examples: 300
+
+  small_sample:
+    description: "Quick test on sample_docs"
+    source: ./sample_docs
+    tasks: [summary, qa]
+    max_examples: 50
+
+  qa_only:
+    description: "Only QA pairs from papers"
+    source: ./Papers
+    tasks: [qa]
+    max_examples: 300

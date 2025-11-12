@@ -52,6 +52,22 @@ def find_default_dataset() -> Path | None:
     return None
 
 
+# ---------- Small compatibility helpers ----------
+
+
+def altair_chart_compat(chart: alt.Chart) -> None:
+    """
+    Call st.altair_chart in a way that works on both old and new Streamlit.
+
+    - Newer Streamlit: supports width="stretch".
+    - Older Streamlit: only supports use_container_width=...
+    """
+    try:
+        st.altair_chart(chart, width="stretch")  # new API
+    except TypeError:
+        st.altair_chart(chart, use_container_width=True)  # old API
+
+
 # ---------- Streamlit UI ----------
 
 st.set_page_config(
@@ -97,12 +113,16 @@ if uploaded_file is not None:
         except json.JSONDecodeError:
             continue
     df = pd.DataFrame(records)
+    dataset_label = f"Uploaded file: {uploaded_file.name}"
 else:
     path = Path(dataset_path_str).expanduser()
     if not path.exists():
         st.error(f"File not found: {path}")
         st.stop()
     df = load_jsonl(path)
+    dataset_label = f"File: {path}"
+
+st.sidebar.caption(f"Using dataset: {dataset_label}")
 
 if df.empty:
     st.warning("No records found in this dataset.")
@@ -131,7 +151,7 @@ if "output_text" not in df.columns:
     else:
         df["output_text"] = ""
 
-# Task name / type defaults
+# Task name / type defaults (for finetune / RAG-style exports)
 if "task_name" not in df.columns:
     if "question" in df.columns and "answer" in df.columns:
         df["task_name"] = "rag_qa"
@@ -200,7 +220,10 @@ task_df = (
     )
     .sort_values("count", ascending=False)
 )
-st.bar_chart(task_df.set_index("task_name")["count"])
+if not task_df.empty:
+    st.bar_chart(task_df.set_index("task_name")["count"])
+else:
+    st.info("No task_name information available to plot.")
 
 # Length distributions
 st.markdown("#### Length distribution (characters)")
@@ -216,7 +239,7 @@ with len_col1:
             alt.Y("count():Q", title="Count"),
         )
     )
-    st.altair_chart(chart_in, use_container_width=True)
+    altair_chart_compat(chart_in)
 
 with len_col2:
     st.caption("Output length")
@@ -228,7 +251,7 @@ with len_col2:
             alt.Y("count():Q", title="Count"),
         )
     )
-    st.altair_chart(chart_out, use_container_width=True)
+    altair_chart_compat(chart_out)
 
 # Examples over time (if timestamps present)
 if df["created_at_parsed"].notna().any():
@@ -248,7 +271,7 @@ if df["created_at_parsed"].notna().any():
             y=alt.Y("count:Q", title="Examples"),
         )
     )
-    st.altair_chart(time_chart, use_container_width=True)
+    altair_chart_compat(time_chart)
 
 # Per-task length stats
 st.markdown("#### Per-task length stats")
@@ -261,7 +284,7 @@ per_task_stats = (
     )
     .reset_index()
 )
-st.dataframe(per_task_stats, width="stretch")
+st.dataframe(per_task_stats)
 
 # ---------- Filtering & browsing ----------
 
@@ -332,10 +355,7 @@ display_cols = [
 ]
 existing_display_cols = [c for c in display_cols if c in filtered.columns]
 
-st.dataframe(
-    filtered[existing_display_cols],
-    width="stretch",
-)
+st.dataframe(filtered[existing_display_cols])
 
 # Download buttons for the filtered subset
 if not filtered.empty:
@@ -382,20 +402,25 @@ else:
     st.markdown("**Chunk ID:** " + str(row.get("chunk_id", "")))
     st.markdown("**Created at:** " + str(row.get("created_at", "")))
 
-    # Show metadata if present
-    metadata_val = row.get("metadata", {})
-    try:
-        # if it's a string, try to parse JSON; if it's a dict, pretty-print
-        if isinstance(metadata_val, str) and metadata_val.strip():
-            try:
-                metadata_val = json.loads(metadata_val)
-            except json.JSONDecodeError:
-                pass
-        pretty_meta = json.dumps(metadata_val, indent=2, ensure_ascii=False)
-    except TypeError:
-        pretty_meta = str(metadata_val)
+    # Show metadata if present and non-empty
+    metadata_val: Any = row.get("metadata", None)
+    display_meta: Any | None = None
 
-    if pretty_meta and pretty_meta != "null":
+    if isinstance(metadata_val, str):
+        if metadata_val.strip():
+            try:
+                display_meta = json.loads(metadata_val)
+            except json.JSONDecodeError:
+                display_meta = metadata_val
+    elif metadata_val not in (None, "", {}, [], ()):
+        display_meta = metadata_val
+
+    if display_meta is not None:
+        try:
+            pretty_meta = json.dumps(display_meta, indent=2, ensure_ascii=False)
+        except TypeError:
+            pretty_meta = str(display_meta)
+
         st.markdown("##### Metadata")
         st.code(pretty_meta, language="json")
 
@@ -404,3 +429,28 @@ else:
 
     st.markdown("##### Output text")
     st.code(str(row.get("output_text", "")), language="markdown")
+
+# ---------- RAG QA inspector (optional) ----------
+
+if {"question", "answer", "context"}.issubset(df.columns):
+    st.subheader("RAG QA inspector (question / answer / context)")
+    rag_df = df.dropna(subset=["question", "answer", "context"]).copy()
+    if rag_df.empty:
+        st.info("RAG QA columns are present but all rows are empty.")
+    else:
+        rag_questions = rag_df["question"].astype(str).tolist()
+        selected_q = st.selectbox(
+            "Select RAG question",
+            rag_questions,
+            key="rag_question_select",
+        )
+        rag_row = rag_df[rag_df["question"].astype(str) == selected_q].iloc[0]
+
+        st.markdown("**Question:**")
+        st.write(str(rag_row.get("question", "")))
+
+        st.markdown("**Answer (ground truth):**")
+        st.write(str(rag_row.get("answer", "")))
+
+        st.markdown("**Context:**")
+        st.code(str(rag_row.get("context", "")), language="markdown")

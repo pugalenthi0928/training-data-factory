@@ -1,0 +1,37 @@
+# Training Data Robo config – pipeline defaults and profiles
+
+defaults:
+  model: gpt-4.1-mini
+  max_chars: 900
+  overlap: 120
+  max_examples: 300
+  temperature: 0.3
+  output_dir: output
+  tasks:
+    - summary
+    - qa
+    - key_points
+    - title
+
+profiles:
+  research_papers:
+    description: "Full pipeline on academic papers"
+    # NOTE: ../Papers because your Papers folder is a sibling of this repo
+    source: ../Papers
+    output_name: papers_rich_summary_qa_300
+    tasks: [summary, qa, key_points, title]
+    max_examples: 300
+
+  small_sample:
+    description: "Quick test on sample_docs"
+    source: ./sample_docs
+    output_name: dataset_cli_rich_200
+    tasks: [summary, qa, key_points, title]
+    max_examples: 200
+
+  qa_only:
+    description: "Only QA pairs from papers"
+    source: ../Papers
+    output_name: papers_qa_only_real_gpt4
+    tasks: [qa]
+    max_examples: 300
