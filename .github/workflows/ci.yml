@@ -21,11 +21,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install pytest rouge-score
+          pip install pytest rouge-score pandas streamlit altair
 
       - name: Syntax check
         run: |
-          python -m py_compile app.py scripts/run_profile.py scripts/evaluate_qa.py scripts/postprocess_quality.py
+          python -m py_compile app.py scripts/run_profile.py scripts/evaluate_qa.py scripts/postprocess_quality.py scripts/export_finetune.py scripts/export_rag_qa.py
 
       - name: Run tests
         run: |
