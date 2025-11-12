@@ -25,9 +25,8 @@ def norm(s: Optional[str]) -> str:
     return (s or "").strip()
 
 def call_openai_chat(prompt: str, model: str, retries: int = 3, sleep_s: float = 1.5) -> str:
-    # OpenAI Python SDK v1.x (compatible with gpt-4.1-mini via Chat)
     try:
-        from openai import OpenAI  # type: ignore
+        from openai import OpenAI  # OpenAI SDK v1.x
     except Exception as e:
         raise RuntimeError("OpenAI SDK not installed. `pip install openai`") from e
 
@@ -53,26 +52,58 @@ def call_openai_chat(prompt: str, model: str, retries: int = 3, sleep_s: float =
     raise RuntimeError(f"OpenAI call failed after {retries} retries: {last_err}")
 
 def fake_predict(question: str, context: str, answer: str) -> str:
-    # Deterministic, test-friendly prediction.
-    # If answer tokens appear in context, return answer; else "Unknown".
-    q = norm(question).lower()
+    # Deterministic, test-friendly predictor:
     a = norm(answer)
     c = norm(context).lower()
     if a and a.lower() in c:
         return a
-    # fallbacks: try to pick a short plausible fragment from context
     return "Unknown"
 
 def build_prompt(question: str, context: str) -> str:
     return f"CONTEXT:\n{context}\n\nQUESTION:\n{question}\n\nAnswer:"
 
+def extract_question(row: Dict[str, Any]) -> str:
+    # Prefer explicit question
+    q = norm(row.get("question"))
+    if q:
+        return q
+    # Common fallbacks used by various templates
+    meta = row.get("metadata") or {}
+    if isinstance(meta, dict):
+        q = norm(meta.get("question"))
+        if q:
+            return q
+    for k in ("input_question", "prompt", "query"):
+        q = norm(row.get(k))
+        if q:
+            return q
+    # If it's a QA task_name but author only stored input_text as the question
+    if "qa" in str(row.get("task_name","")).lower() and not norm(row.get("context")):
+        q = norm(row.get("input_text"))
+        if q:
+            return q
+    return ""
+
+def extract_context(row: Dict[str, Any]) -> str:
+    c = norm(row.get("context"))
+    if c:
+        return c
+    # Fall back to input_text for RAG-like rows
+    return norm(row.get("input_text"))
+
+def extract_answer(row: Dict[str, Any]) -> str:
+    a = norm(row.get("answer"))
+    if a:
+        return a
+    return norm(row.get("output_text"))
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Generate QA predictions for evaluation.")
-    ap.add_argument("--input", required=True, help="Input JSONL with question/answer/context rows.")
+    ap.add_argument("--input", required=True, help="Input JSONL with QA-like rows.")
     ap.add_argument("--output", required=True, help="Output JSONL with added 'prediction'.")
-    ap.add_argument("--model", default="gpt-4.1-mini", help="OpenAI chat model (when not using --fake-model).")
+    ap.add_argument("--model", default="gpt-4.1-mini", help="OpenAI chat model when not using --fake-model.")
     ap.add_argument("--max-examples", type=int, default=None, help="Optional cap on examples.")
-    ap.add_argument("--fake-model", action="store_true", help="Use offline fake model (no API calls).")
+    ap.add_argument("--fake-model", dest="fake_model", action="store_true", help="Use offline fake model (no API calls).")
     args = ap.parse_args()
 
     in_path = Path(args.input)
@@ -81,44 +112,48 @@ def main() -> None:
     if not rows:
         raise SystemExit("Input dataset is empty; nothing to predict.")
 
-    # Keep only rows with QA signals
-    filt: List[Dict[str, Any]] = []
+    # Keep rows that look QA-ish
+    qaish: List[Dict[str, Any]] = []
     for r in rows:
-        if ("question" in r and "answer" in r) or str(r.get("task_type","")).lower() == "qa" or "qa" in str(r.get("task_name","")).lower():
-            filt.append(r)
-    if not filt:
-        raise SystemExit("No QA-like rows found (need question/answer or task_name contains 'qa').")
+        tn = str(r.get("task_name","")).lower()
+        tt = str(r.get("task_type","")).lower()
+        q = norm(r.get("question"))
+        has_qa_signal = ("qa" in tn) or ("qa" in tt) or bool(q)
+        if has_qa_signal:
+            qaish.append(r)
+    if not qaish:
+        raise SystemExit("No QA-like rows found (need question/task_name or task_type including 'qa').")
 
     if args.max_examples is not None:
-        filt = filt[: args.max_examples]
+        qaish = qaish[: args.max_examples]
 
     out_rows: List[Dict[str, Any]] = []
-    for r in filt:
-        question = norm(r.get("question"))
-        context = norm(r.get("context"))
-        answer = norm(r.get("answer"))
+    for r in qaish:
+        question = extract_question(r)
+        context  = extract_context(r)
+        answer   = extract_answer(r)
+
         if not question:
-            # Skip rows without a question
+            # Still no question → skip this row
             continue
 
-        if args.fake-model:
+        if args.fake_model:
             pred = fake_predict(question, context, answer)
         else:
-            prompt = build_prompt(question, context)
-            pred = call_openai_chat(prompt, model=args.model)
+            pred = call_openai_chat(build_prompt(question, context), model=args.model)
 
         new_r = dict(r)
         new_r["prediction"] = pred
         out_rows.append(new_r)
 
     if not out_rows:
-        raise SystemExit("No rows produced (check filters).")
+        raise SystemExit("No rows produced (check filters / question field).")
 
     write_jsonl(out_path, out_rows)
     summary = {
         "input_rows": len(rows),
         "predicted_rows": len(out_rows),
-        "model": ("fake" if args.fake-model else args.model),
+        "model": ("fake" if args.fake_model else args.model),
         "output_path": str(out_path),
     }
     print("Prediction summary:")
