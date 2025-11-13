@@ -20,7 +20,6 @@ def load_jsonl(path: Path) -> pd.DataFrame:
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError:
-                # Skip malformed lines
                 continue
     if not records:
         return pd.DataFrame()
@@ -29,13 +28,16 @@ def load_jsonl(path: Path) -> pd.DataFrame:
 
 def find_default_dataset() -> Path | None:
     candidates = [
+        Path("output/dataset_cli_rich_200_quality.jsonl"),
         Path("output/dataset_cli_rich.jsonl"),
         Path("output/dataset_cli_rich_200.jsonl"),
         Path("output/dataset_cli_summary_qa.jsonl"),
         Path("output/dataset_cli_summary.jsonl"),
         Path("output/dataset_real.jsonl"),
         Path("output/dataset.jsonl"),
+        Path("output/papers_rich_summary_qa_300_quality.jsonl"),
         Path("output/papers_rich_summary_qa_300.jsonl"),
+        Path("output/papers_qa_only_real_gpt4_quality.jsonl"),
         Path("output/papers_qa_only_real_gpt4.jsonl"),
     ]
     for c in candidates:
@@ -45,12 +47,9 @@ def find_default_dataset() -> Path | None:
 
 
 def altair_chart_compat(chart: alt.Chart) -> None:
-    """Compatibility wrapper for Streamlit's altair_chart API."""
     try:
-        # Newer Streamlit
         st.altair_chart(chart, width="stretch")
     except TypeError:
-        # Older Streamlit
         st.altair_chart(chart, use_container_width=True)
 
 
@@ -59,13 +58,15 @@ st.set_page_config(
     layout="wide",
 )
 
+# Session state for interactive curation
+if "labels" not in st.session_state:
+    st.session_state["labels"] = {}
+
 st.title("📊 Training Data Robo – Dataset Dashboard")
 st.markdown(
     "Explore your generated training datasets (summaries, QA pairs, key points, titles, etc.) "
     "created by the `tdr` CLI."
 )
-
-# ---------- Dataset selection ----------
 
 st.sidebar.header("⚙️ Dataset selection")
 
@@ -87,7 +88,6 @@ uploaded_file = st.sidebar.file_uploader(
 df: pd.DataFrame
 
 if uploaded_file is not None:
-    # Load from uploaded file
     records: List[Dict[str, Any]] = []
     for raw_line in uploaded_file.readlines():
         line = raw_line.decode("utf-8").strip()
@@ -115,12 +115,10 @@ if df.empty:
 
 # ---------- Normalise schema ----------
 
-# Map common variants into input_text / output_text
 if "input_text" not in df.columns:
     if "input" in df.columns:
         df["input_text"] = df["input"].astype(str)
     elif "question" in df.columns or "context" in df.columns:
-        # For RAG-style datasets: prefer context, fall back to question
         if "context" in df.columns:
             df["input_text"] = df["context"].astype(str)
         else:
@@ -136,7 +134,6 @@ if "output_text" not in df.columns:
     else:
         df["output_text"] = ""
 
-# Task name / type defaults (for finetune / RAG-style exports)
 if "task_name" not in df.columns:
     if "question" in df.columns and "answer" in df.columns:
         df["task_name"] = "rag_qa"
@@ -149,7 +146,6 @@ if "task_type" not in df.columns:
     else:
         df["task_type"] = ""
 
-# Ensure expected columns exist
 expected_cols = [
     "id",
     "task_name",
@@ -170,20 +166,17 @@ for col in expected_cols:
     if col not in df.columns:
         df[col] = ""
 
-# If id is missing/empty everywhere, create synthetic IDs
 if df["id"].astype(str).str.strip().eq("").all():
     df["id"] = [f"ex-{i:05d}" for i in range(1, len(df) + 1)]
 
-# Length features
 df["input_length"] = df["input_text"].astype(str).str.len()
 df["output_length"] = df["output_text"].astype(str).str.len()
 
-# Parse created_at if present
 df["created_at_parsed"] = pd.to_datetime(
     df["created_at"], errors="coerce"
 )
 
-# ---------- High-level stats ----------
+# ---------- Overview ----------
 
 st.subheader("Overview")
 
@@ -199,7 +192,6 @@ col3.metric("Distinct task types", len(type_counts))
 num_docs = df["document_id"].astype(str).nunique() if "document_id" in df.columns else 0
 col4.metric("Distinct documents", num_docs)
 
-# Task distribution
 st.markdown("#### Examples per task")
 task_df = (
     pd.DataFrame(
@@ -212,7 +204,6 @@ if not task_df.empty:
 else:
     st.info("No task_name information available to plot.")
 
-# Length distributions
 st.markdown("#### Length distribution (characters)")
 len_col1, len_col2 = st.columns(2)
 
@@ -240,7 +231,6 @@ with len_col2:
     )
     altair_chart_compat(chart_out)
 
-# Examples over time (if timestamps present)
 if df["created_at_parsed"].notna().any():
     st.markdown("#### Examples over time")
     time_df = (
@@ -260,39 +250,23 @@ if df["created_at_parsed"].notna().any():
     )
     altair_chart_compat(time_chart)
 
-# Per-task length & quality stats
 st.markdown("#### Per-task length & quality stats")
-
-# Coerce to numeric for aggregation robustness
-stats_df = df.copy()
-stats_df["input_length_num"] = pd.to_numeric(
-    stats_df["input_length"], errors="coerce"
-)
-stats_df["output_length_num"] = pd.to_numeric(
-    stats_df["output_length"], errors="coerce"
-)
-stats_df["quality_score_num"] = pd.to_numeric(
-    stats_df["quality_score"], errors="coerce"
-)
-
 per_task_stats = (
-    stats_df.groupby("task_name", dropna=False)
+    df.groupby("task_name")
     .agg(
         num_examples=("id", "count"),
-        avg_input_len=("input_length_num", "mean"),
-        avg_output_len=("output_length_num", "mean"),
-        avg_quality_score=("quality_score_num", "mean"),
+        avg_input_len=("input_length", "mean"),
+        avg_output_len=("output_length", "mean"),
+        avg_quality_score=("quality_score", "mean"),
     )
     .reset_index()
 )
-
 st.dataframe(per_task_stats)
 
-# ---------- Filtering & browsing ----------
+# ---------- Browse examples ----------
 
 st.subheader("Browse examples")
 
-# Filters in a single row so the table stays full-width below
 fcol1, fcol2, fcol3, fcol4 = st.columns([1, 1, 1, 2])
 
 task_options = ["(all)"] + sorted(task_counts.keys())
@@ -305,7 +279,6 @@ if "document_id" in df.columns:
 with fcol2:
     selected_doc = st.selectbox("Filter by document_id", doc_options)
 
-# Model filter (based on model_name)
 model_options = ["(all)"]
 if "model_name" in df.columns:
     non_empty_models = sorted(
@@ -344,7 +317,6 @@ if search_text:
 
 st.caption(f"Showing {len(filtered):,} of {num_examples:,} examples.")
 
-# Show a smaller set of columns for readability
 display_cols = [
     "id",
     "task_name",
@@ -361,9 +333,7 @@ existing_display_cols = [c for c in display_cols if c in filtered.columns]
 
 st.dataframe(filtered[existing_display_cols])
 
-# Download buttons for the filtered subset
 if not filtered.empty:
-    # Make all non-JSON-native types (like Timestamps) safely serialisable
     records = filtered.to_dict(orient="records")
     jsonl_str = "\n".join(
         json.dumps(r, ensure_ascii=False, default=str) for r in records
@@ -406,7 +376,6 @@ else:
     st.markdown("**Chunk ID:** " + str(row.get("chunk_id", "")))
     st.markdown("**Created at:** " + str(row.get("created_at", "")))
 
-    # Quality info
     qs = row.get("quality_score", "")
     if isinstance(qs, (int, float)):
         st.markdown(f"**Quality score:** {qs:.2f}")
@@ -423,7 +392,6 @@ else:
     if isinstance(flags_val, list) and flags_val:
         st.markdown("**Quality flags:** " + ", ".join(str(f) for f in flags_val))
 
-    # Metadata (pretty-printed JSON if possible)
     metadata_val = row.get("metadata", {})
     try:
         if isinstance(metadata_val, str) and metadata_val.strip():
@@ -444,6 +412,122 @@ else:
 
     st.markdown("##### Output text")
     st.code(str(row.get("output_text", "")), language="markdown")
+
+    # Interactive curation controls
+    labels = st.session_state["labels"]
+    existing_info = labels.get(selected_id, {})
+    existing_label = existing_info.get("label", "unlabeled")
+    existing_note = existing_info.get("note", "")
+
+    label_options = ["unlabeled", "keep", "drop"]
+    try:
+        default_index = label_options.index(existing_label)
+    except ValueError:
+        default_index = 0
+
+    label_choice = st.radio(
+        "Label this example",
+        label_options,
+        index=default_index,
+        horizontal=True,
+    )
+
+    note_text = st.text_input(
+        "Optional note/tag for this example",
+        value=existing_note,
+    )
+
+    if label_choice != "unlabeled" or note_text:
+        labels[selected_id] = {"label": label_choice, "note": note_text}
+    elif selected_id in labels:
+        # Remove label if switched back to unlabeled with no note
+        del labels[selected_id]
+
+    st.session_state["labels"] = labels
+
+# ---------- Curation export ----------
+
+st.subheader("Curation export")
+
+labels = st.session_state["labels"]
+if not labels:
+    st.info("No labels yet. Use the 'Label this example' controls above.")
+else:
+    st.caption(f"Total labeled examples in this session: {len(labels)}")
+
+    curated_df = filtered.copy()
+    curated_df["id_str_for_label"] = curated_df["id"].astype(str)
+
+    def _label_for_id(id_str: str):
+        info = labels.get(id_str)
+        if not info:
+            return None
+        return info.get("label")
+
+    def _note_for_id(id_str: str):
+        info = labels.get(id_str)
+        if not info:
+            return None
+        return info.get("note")
+
+    curated_df["label"] = curated_df["id_str_for_label"].map(_label_for_id)
+    curated_df["label_note"] = curated_df["id_str_for_label"].map(_note_for_id)
+
+    labeled_only_df = curated_df[curated_df["label"].notna()].drop(
+        columns=["id_str_for_label"]
+    )
+    full_curated_df = curated_df.drop(columns=["id_str_for_label"])
+
+    st.caption(
+        f"Labeled rows in current filter: {len(labeled_only_df):,} "
+        f"out of {len(curated_df):,}."
+    )
+
+    if labeled_only_df.empty:
+        st.info("No labeled rows in the current filtered subset yet.")
+    else:
+        ccol1, ccol2 = st.columns(2)
+
+        all_records = full_curated_df.to_dict(orient="records")
+        labeled_records = labeled_only_df.to_dict(orient="records")
+
+        all_jsonl = "\n".join(
+            json.dumps(r, ensure_ascii=False, default=str) for r in all_records
+        )
+        labeled_jsonl = "\n".join(
+            json.dumps(r, ensure_ascii=False, default=str) for r in labeled_records
+        )
+
+        all_csv = full_curated_df.to_csv(index=False)
+        labeled_csv = labeled_only_df.to_csv(index=False)
+
+        with ccol1:
+            st.download_button(
+                "⬇️ Download ALL filtered + labels (JSONL)",
+                data=all_jsonl,
+                file_name="filtered_with_labels_all.jsonl",
+                mime="application/json",
+            )
+            st.download_button(
+                "⬇️ Download ALL filtered + labels (CSV)",
+                data=all_csv,
+                file_name="filtered_with_labels_all.csv",
+                mime="text/csv",
+            )
+
+        with ccol2:
+            st.download_button(
+                "⬇️ Download LABELED ONLY (JSONL)",
+                data=labeled_jsonl,
+                file_name="filtered_with_labels_labeled_only.jsonl",
+                mime="application/json",
+            )
+            st.download_button(
+                "⬇️ Download LABELED ONLY (CSV)",
+                data=labeled_csv,
+                file_name="filtered_with_labels_labeled_only.csv",
+                mime="text/csv",
+            )
 
 # ---------- RAG QA inspector (optional) ----------
 
@@ -493,3 +577,20 @@ else:
         st.error(f"Could not parse metrics file: {metrics_path}")
     else:
         st.json(metrics_data)
+
+# ---------- Leaderboard ----------
+st.subheader("Leaderboard")
+runs_csv = Path("runs/qa_runs.csv")
+if runs_csv.exists():
+    try:
+        runs_df = pd.read_csv(runs_csv)
+        if "timestamp" in runs_df.columns:
+            runs_df["timestamp"] = pd.to_datetime(runs_df["timestamp"], errors="coerce")
+            runs_df = runs_df.sort_values("timestamp", ascending=False)
+        st.dataframe(runs_df, use_container_width=True)
+        if Path("reports/qa_leaderboard.png").exists():
+            st.image("reports/qa_leaderboard.png", caption="QA Runs (EM & ROUGE-L)", use_container_width=True)
+    except Exception as e:
+        st.error(f"Could not load leaderboard: {e}")
+else:
+    st.info("No leaderboard yet. Run ./scripts/run_all.sh to generate one.")
