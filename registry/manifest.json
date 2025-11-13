@@ -1,0 +1,80 @@
+[
+  {
+    "timestamp": "2025-11-13T21:52:54+1100",
+    "name": "papers_qa",
+    "version": "0.8.0",
+    "source_tag": "papers_qa",
+    "paths": {
+      "dataset": "output/papers_qa_only_real_gpt4_deduped.jsonl",
+      "raw_dataset": "output/papers_qa_only_real_gpt4.jsonl",
+      "metrics": "output/papers_qa_predictions_metrics.json"
+    },
+    "hashes": {
+      "dataset_sha256": "2bfe25a5b6bae22f8f78607f968efee24abdf7cf5a5dd9821f8843ff12a54f78",
+      "raw_sha256": "129f83ce1e99e57448ab74fb80c0b935c3a954479891e4a226718f73b440d390"
+    },
+    "counts": {
+      "rows": 296,
+      "raw_rows": 300,
+      "dedupe_dropped": 4
+    },
+    "quality": {
+      "rows_scored": 296,
+      "avg_quality_score": 1.0,
+      "flag_counts": {}
+    },
+    "metrics": {
+      "num_eval_examples": 50,
+      "rouge1_f": 0.731493471798455,
+      "rouge2_f": 0.5676247124923577,
+      "rougeL_f": 0.6447034367531941,
+      "exact_match": 0.06,
+      "reference_column": "output_text",
+      "prediction_column": "prediction"
+    },
+    "model": "gpt-4.1-mini",
+    "env": {
+      "user": "pugalenthimagendran",
+      "hostname": "Mac"
+    }
+  },
+  {
+    "timestamp": "2025-11-13T22:21:22+1100",
+    "name": "papers_qa",
+    "version": "0.8.0",
+    "source_tag": "papers_qa",
+    "paths": {
+      "dataset": "output/papers_qa_only_real_gpt4_deduped.jsonl",
+      "raw_dataset": "output/papers_qa_only_real_gpt4.jsonl",
+      "metrics": "output/papers_qa_predictions_metrics.json"
+    },
+    "hashes": {
+      "dataset_sha256": "44db08aabc085baa507e885a93c87d7330fc2452966ff7dd644593dd3231aa30",
+      "raw_sha256": "dac9be6a9773aa2e7bf756673d04f8d382b2049153358e98398a0fb97b1c08b0"
+    },
+    "counts": {
+      "rows": 298,
+      "raw_rows": 300,
+      "dedupe_dropped": 2
+    },
+    "quality": {
+      "rows_scored": 298,
+      "avg_quality_score": 1.0,
+      "flag_counts": {}
+    },
+    "metrics": {
+      "num_eval_examples": 50,
+      "rouge1_f": 0.7238861718477763,
+      "rouge2_f": 0.5657498845227221,
+      "rougeL_f": 0.6405422414814507,
+      "exact_match": 0.06,
+      "reference_column": "output_text",
+      "prediction_column": "prediction"
+    },
+    "model": "gpt-4.1-mini",
+    "env": {
+      "user": "pugalenthimagendran",
+      "hostname": "Mac"
+    }
+  }
+]

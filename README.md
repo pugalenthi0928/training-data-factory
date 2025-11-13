@@ -1,31 +1,43 @@
-# Training Data Robo
-
-An **enterprise-style training data factory** for LLMs.
-
-- Ingest PDFs, text files, and folders of documents.
-- Chunk them intelligently into paragraph-sized pieces.
-- Generate synthetic training data:
-  - Summaries
-  - Question–Answer pairs
-  - Key points
-  - Titles
-- Inspect, filter, and download datasets via a Streamlit dashboard.
-- Export JSONL datasets you can use for:
-  - Fine-tuning
-  - RAG-style question answering
-  - Internal analytics
-
+---
+dataset_info:
+  features:
+  - name: input_text
+    dtype: string
+  - name: output_text
+    dtype: string
+  - name: quality_score
+    dtype: float64
+license: other
+language:
+- en
+task_categories:
+- question-answering
+pretty_name: Papers QA (generated)
+size_categories:
+- 1K<n<10K
 ---
 
-## 1. Installation
+# Papers QA (deduped)
 
-### 1.1. Clone and create environment
+**Rows:** 298 (raw: 300, dedupe dropped: 2)
+**Model used for eval:** `gpt-4.1-mini`
+**Eval (n=50):**
+- ROUGE-1 F: 0.724
+- ROUGE-2 F: 0.566
+- ROUGE-L F: 0.641
+- Exact Match: 0.060
 
-```bash
-git clone <your-repo-url>.git
-cd training-data-factory
+**Files**
+- `papers_qa_only_real_gpt4_deduped.jsonl`
+- `papers_qa_predictions_metrics.json`
+- `manifest.json`
 
-conda create -n myenv python=3.9 -y
-conda activate myenv
+## Quick start (Python)
 
-pip install -e .
+from datasets import load_dataset
+ds = load_dataset(
+    "json",
+    data_files={"train": "hf://datasets/pugalenthi2000/tdf-papers-qa/papers_qa_only_real_gpt4_deduped.jsonl"},
+    split="train",
+)
+print(len(ds), ds[0])
