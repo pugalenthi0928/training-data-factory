@@ -1,6 +1,6 @@
 # Forge - Training Data Engine That Proves Its Own Worth
 
-[![CI](https://github.com/pugalenthimagendran/training-data-factory/actions/workflows/ci.yml/badge.svg)](https://github.com/pugalenthimagendran/training-data-factory/actions)
+[![CI](https://github.com/pugalenthi0928/training-data-factory/actions/workflows/ci.yml/badge.svg)](https://github.com/pugalenthi0928/training-data-factory/actions)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -8,7 +8,7 @@
 
 Generate multi-strategy training data from documents, evaluate it with LLM-as-judge rubrics, detect benchmark contamination, fine-tune a model locally on Apple Silicon, and benchmark before/after with statistical significance testing. One command, end to end.
 
-**[Demo](https://pugalenthimagendran.github.io/training-data-factory/) | [Overview](https://pugalenthimagendran.github.io/training-data-factory/overview.html) | [Technical Deep-Dive](https://pugalenthimagendran.github.io/training-data-factory/technical.html)**
+**[Demo](https://pugalenthi0928.github.io/training-data-factory/) | [Overview](https://pugalenthi0928.github.io/training-data-factory/overview.html) | [Technical Deep-Dive](https://pugalenthi0928.github.io/training-data-factory/technical.html)**
 
 ## Architecture
 
@@ -30,7 +30,7 @@ graph LR
 
 ```bash
 # Install
-git clone https://github.com/pugalenthimagendran/training-data-factory.git
+git clone https://github.com/pugalenthi0928/training-data-factory.git
 cd training-data-factory
 make install
 
