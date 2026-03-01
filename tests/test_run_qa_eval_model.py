@@ -1,5 +1,8 @@
-import json, subprocess, sys
+import json
+import subprocess
+import sys
 from pathlib import Path
+
 
 def write_jsonl(p: Path, rows):
     with p.open("w", encoding="utf-8") as f:

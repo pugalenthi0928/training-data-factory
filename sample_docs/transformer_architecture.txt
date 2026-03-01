@@ -1,0 +1,70 @@
+# The Transformer Architecture
+
+## Introduction
+
+The Transformer architecture, introduced in the 2017 paper "Attention Is All You Need" by Vaswani et al., revolutionized natural language processing and later computer vision. Unlike previous sequence models that processed tokens sequentially (RNNs, LSTMs), the Transformer processes all positions in parallel using a mechanism called self-attention.
+
+The key insight is that self-attention allows every token in a sequence to directly attend to every other token, regardless of distance. This solves the long-range dependency problem that plagued recurrent networks, where information from early tokens would degrade as it passed through many sequential steps.
+
+## Self-Attention Mechanism
+
+Self-attention computes a weighted sum of all token representations, where the weights reflect how much each token should attend to every other token. For each token, three vectors are computed:
+
+- Query (Q): What information this token is looking for
+- Key (K): What information this token contains
+- Value (V): The actual information to be aggregated
+
+The attention score between two tokens is computed as the dot product of the query vector of one token and the key vector of another, divided by the square root of the dimension for numerical stability. These scores are passed through a softmax function to produce attention weights that sum to one.
+
+Multi-head attention runs several attention operations in parallel, each with different learned projections. This allows the model to attend to information at different positions and capture different types of relationships simultaneously. A model with 8 attention heads can learn 8 different ways to relate tokens to each other.
+
+## Encoder-Decoder Structure
+
+The original Transformer uses an encoder-decoder architecture:
+
+The encoder processes the input sequence through a stack of identical layers. Each encoder layer contains two sublayers: a multi-head self-attention mechanism and a position-wise feed-forward network. Residual connections and layer normalization are applied around each sublayer.
+
+The decoder generates the output sequence one token at a time, also through a stack of identical layers. Each decoder layer has three sublayers: masked self-attention (preventing positions from attending to future tokens), cross-attention (attending to the encoder output), and a position-wise feed-forward network.
+
+## Positional Encoding
+
+Since the Transformer processes all positions in parallel, it has no inherent notion of token order. Positional encodings are added to the input embeddings to provide position information. The original paper used sinusoidal functions of different frequencies, allowing the model to learn relative positions through linear transformations.
+
+Modern variants like RoPE (Rotary Position Embedding) encode position information by rotating the query and key vectors. This approach has better extrapolation to longer sequences than the original sinusoidal encoding and has become the standard in recent large language models.
+
+## Modern Variants
+
+The Transformer architecture has spawned numerous variants optimized for different use cases:
+
+- BERT (Bidirectional Encoder Representations from Transformers) uses only the encoder stack with masked language modeling pre-training. It processes text bidirectionally, making it excellent for understanding tasks like classification and question answering.
+
+- GPT (Generative Pre-trained Transformer) uses only the decoder stack with autoregressive language modeling. It generates text left-to-right and has scaled to hundreds of billions of parameters in models like GPT-4.
+
+- T5 (Text-to-Text Transfer Transformer) frames all NLP tasks as text-to-text problems using the full encoder-decoder architecture. This unified format simplifies multi-task learning and transfer.
+
+- Vision Transformer (ViT) applies the Transformer to images by dividing an image into patches and treating each patch as a token. This approach has matched or exceeded convolutional neural networks on image classification benchmarks.
+
+## Scaling Laws
+
+Research has revealed consistent scaling laws for Transformer language models. Performance improves predictably as a power law with respect to three factors: model size (number of parameters), dataset size (number of training tokens), and compute budget (floating-point operations).
+
+The Chinchilla scaling laws suggest that model size and training data should be scaled proportionally. A model with N parameters should be trained on approximately 20N tokens for optimal compute efficiency. This finding shifted the field from training increasingly large models on fixed datasets to training appropriately-sized models on much larger datasets.
+
+## Efficiency Improvements
+
+Standard self-attention has quadratic complexity with respect to sequence length, which limits the context window of Transformer models. Several approaches address this limitation:
+
+1. Flash Attention reorganizes the attention computation to minimize memory transfers between GPU memory hierarchies, achieving 2-4x speedup without approximation.
+2. Sparse attention patterns (like those in Longformer and BigBird) restrict each token to attend to only a subset of positions, reducing complexity from quadratic to linear.
+3. Linear attention approximations replace the softmax operation with kernel functions, enabling linear-time computation at the cost of some accuracy.
+4. Mixture of Experts (MoE) activates only a subset of model parameters for each input, allowing much larger total model capacity without proportional compute increase.
+
+## Training Considerations
+
+Training large Transformers requires careful attention to optimization and stability. The original paper used the Adam optimizer with a warmup-then-decay learning rate schedule. Modern training recipes typically include:
+
+- Gradient accumulation to simulate larger batch sizes
+- Mixed precision training (FP16/BF16) to reduce memory usage and increase throughput
+- Gradient clipping to prevent training instability from large gradient spikes
+- Weight decay for regularization
+- Learning rate warmup to stabilize early training dynamics

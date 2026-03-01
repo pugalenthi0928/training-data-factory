@@ -56,3 +56,26 @@ fi
 
 echo
 echo "All done 🎉"
+
+echo
+echo "=== Register dataset ==="
+DATASET_VERSION="${DATASET_VERSION:-0.8.0}"
+python scripts/register_dataset.py \
+  --dataset-path output/papers_qa_only_real_gpt4_deduped.jsonl \
+  --raw-dataset output/papers_qa_only_real_gpt4.jsonl \
+  --metrics output/papers_qa_predictions_metrics.json \
+  --name papers_qa \
+  --version "${DATASET_VERSION}" \
+  --source-tag papers_qa \
+  --model gpt-4.1-mini \
+  --registry registry/manifest.json
+
+if [ "${PUBLISH_HF:-0}" = "1" ]; then
+  echo
+  echo "=== Publish to Hugging Face ==="
+  python scripts/publish_hf.py \
+    --repo "${HF_REPO:?Set HF_REPO, e.g. yourname/tdf-papers-qa}" \
+    --path output/papers_qa_only_real_gpt4_deduped.jsonl \
+    --path output/papers_qa_predictions_metrics.json \
+    --path registry/manifest.json
+fi

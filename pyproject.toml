@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pm-training-data-factory"
-version = "0.1.0"
-description = "Enterprise-style training data factory for LLMs"
+name = "forge-training-data"
+version = "0.9.0"
+description = "Training data engine that proves its own worth — generate, evaluate, fine-tune, benchmark"
 authors = [{ name = "Pugalenthi Magendran" }]
 requires-python = ">=3.9"
 
@@ -18,6 +18,21 @@ dependencies = [
     "streamlit>=1.30.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4.0",
+    "mypy>=1.0",
+    "hypothesis>=6.0",
+    "rouge-score>=0.1.2",
+]
+mlx = [
+    "mlx>=0.12.0",
+    "mlx-lm>=0.12.0",
+    "transformers>=4.35.0",
+]
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 
@@ -26,3 +41,29 @@ where = ["src"]
 
 [project.scripts]
 tdr = "training_data_robo.cli:main"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "SIM"]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "E701",   # multiple statements on one line (colon) — existing code style
+    "E702",   # multiple statements on one line (semicolon) — existing code style
+    "SIM108", # ternary operator (readability)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["training_data_robo"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -4,20 +4,21 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union
 
-from .settings import Settings
-from .logging_config import get_logger
+from .ai_client import DummyLLMClient, OpenAILLMClient
+from .chunking import simple_chunk_document as chunk_document
 from .errors import TrainingDataBotError
+from .logging_config import get_logger
 from .models import (
-    Document,
-    TextChunk,
-    TaskTemplate,
-    TrainingExample,
     Dataset,
+    Document,
+    TaskTemplate,
+    TextChunk,
+    TrainingExample,
     new_dataset,
 )
+from .settings import Settings
 from .sources import UnifiedLoader
 from .tasks import TaskManager
-from .ai_client import DummyLLMClient, OpenAILLMClient
 
 
 class TrainingDataBot:
@@ -242,7 +243,7 @@ class TrainingDataBot:
             stats["total_input_len"] += len(ex.input_text)
             stats["total_output_len"] += len(ex.output_text)
 
-        for tname, stats in per_task.items():
+        for _tname, stats in per_task.items():
             c = stats["count"]
             stats["avg_input_length"] = stats["total_input_len"] / c
             stats["avg_output_length"] = stats["total_output_len"] / c
@@ -325,92 +326,3 @@ class TrainingDataBot:
             max_examples=max_examples,
         )
         return await self.export_dataset(dataset_id, output_path)
-
-
-# ---------- Chunking helper ----------
-
-
-def chunk_document(
-    document: Document,
-    max_chars: int = 800,
-    overlap: int = 100,  # currently unused but kept for future refinement
-) -> List[TextChunk]:
-    """
-    Paragraph-aware text splitter with a simple max_chars limit.
-
-    Strategy:
-      * Split on double newlines (paragraphs).
-      * Greedily build up a chunk until adding another paragraph would exceed
-        max_chars.
-      * If a single paragraph is longer than max_chars, hard-split it.
-    """
-    text = document.content or ""
-    if not text.strip():
-        return []
-
-    paragraphs = text.split("\n\n")
-    chunks: List[TextChunk] = []
-    current = ""
-    idx = 0
-
-    for para in paragraphs:
-        para = para.strip()
-        if not para:
-            continue
-
-        # If we can safely add to current chunk, do it
-        if current:
-            candidate = current + "\n\n" + para
-            if len(candidate) <= max_chars:
-                current = candidate
-                continue
-        else:
-            if len(para) <= max_chars:
-                current = para
-                continue
-
-        # At this point, adding para would overflow current.
-        # Flush current if it has content.
-        if current:
-            chunks.append(
-                TextChunk.from_document(
-                    document=document,
-                    text=current,
-                    index=idx,
-                )
-            )
-            idx += 1
-            current = ""
-
-        # Now handle the new paragraph.
-        if len(para) <= max_chars:
-            current = para
-        else:
-            # Single paragraph longer than max_chars → hard split
-            start = 0
-            while start < len(para):
-                end = start + max_chars
-                piece = para[start:end]
-                chunks.append(
-                    TextChunk.from_document(
-                        document=document,
-                        text=piece,
-                        index=idx,
-                    )
-                )
-                idx += 1
-                start = end
-
-            current = ""
-
-    # Flush any remaining text
-    if current:
-        chunks.append(
-            TextChunk.from_document(
-                document=document,
-                text=current,
-                index=idx,
-            )
-        )
-
-    return chunks

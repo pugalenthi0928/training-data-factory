@@ -1,16 +1,13 @@
-import argparse, json
+import argparse
+import json
+import sys
 from pathlib import Path
+
 from rouge_score import rouge_scorer
 
-def load_jsonl(p: Path):
-    rows = []
-    with p.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            rows.append(json.loads(line))
-    return rows
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from training_data_robo.io import load_jsonl
+
 
 def main():
     parser = argparse.ArgumentParser()

@@ -5,8 +5,8 @@ from typing import Iterable, List, Union
 
 from ..models import Document
 from .base import BaseLoader
-from .text_files import TextFileLoader
 from .pdf_files import PdfFileLoader
+from .text_files import TextFileLoader
 from .web_pages import WebPageLoader
 
 

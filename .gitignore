@@ -23,3 +23,15 @@ myenv/
 
 # Project outputs
 output/
+runs/
+
+# Model weights and adapters
+*.safetensors
+*.bin
+*.gguf
+
+# Cache
+.cache/
+
+# Environment files
+.env

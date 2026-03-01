@@ -1,25 +1,16 @@
 from __future__ import annotations
-import argparse, json, os, time
+
+import argparse
+import json
+import os
+import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-def load_jsonl(p: Path) -> List[Dict[str, Any]]:
-    rows: List[Dict[str, Any]] = []
-    with p.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rows.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    return rows
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from training_data_robo.io import load_jsonl, write_jsonl
 
-def write_jsonl(p: Path, rows: List[Dict[str, Any]]) -> None:
-    with p.open("w", encoding="utf-8") as f:
-        for r in rows:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 def norm(s: Optional[str]) -> str:
     return (s or "").strip()

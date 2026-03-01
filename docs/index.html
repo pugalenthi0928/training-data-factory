@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forge - Training Data Engine</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Forge</a>
+  <div class="links">
+    <a href="index.html" class="active">Demo</a>
+    <a href="overview.html">Overview</a>
+    <a href="technical.html">Technical</a>
+    <a href="https://github.com/pugalenthimagendran/training-data-factory">GitHub</a>
+  </div>
+</nav>
+
+<div class="container wide">
+
+  <h1>Training Data Engine That Proves Its Own Worth</h1>
+  <p class="subtitle">
+    Forge generates training data from documents, evaluates it with rubric-based scoring,
+    detects benchmark contamination, fine-tunes a model locally, and measures improvement
+    with statistical significance. End to end, one command.
+  </p>
+
+  <!-- Pipeline visualization -->
+  <div class="pipeline">
+    <div class="step"><span class="num">1</span>Generate</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">2</span>Quality</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">3</span>Dedup</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">4</span>Judge</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">5</span>Contamination</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">6</span>Difficulty</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">7</span>Split</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">8</span>Fine-tune</div>
+    <span class="arrow">&#8594;</span>
+    <div class="step"><span class="num">9</span>Benchmark</div>
+  </div>
+
+  <hr>
+
+  <!-- Key numbers -->
+  <h2>Results from a Real Run</h2>
+  <p>Pipeline executed on 3 technical ML documents (~7,500 words total). Generated 200 training
+    examples across 4 task types, evaluated every one, trained a 0.5B model locally, and
+    benchmarked the result.</p>
+
+  <div class="grid-3">
+    <div class="card stat">
+      <span class="number blue">200</span>
+      <span class="label">Examples generated</span>
+    </div>
+    <div class="card stat">
+      <span class="number blue">4.77</span>
+      <span class="label">Avg judge score (out of 5)</span>
+    </div>
+    <div class="card stat">
+      <span class="number green">+16.8%</span>
+      <span class="label">ROUGE-1 improvement</span>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top: 0.5rem;">
+    <div class="card stat">
+      <span class="number">0</span>
+      <span class="label">Duplicates found</span>
+    </div>
+    <div class="card stat">
+      <span class="number green">p = 0.0</span>
+      <span class="label">Statistical significance</span>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Benchmark comparison -->
+  <h2>Base Model vs Fine-Tuned</h2>
+  <p>Qwen 2.5 0.5B, before and after LoRA fine-tuning on the generated data.
+    40 held-out test examples. Significance tested with paired bootstrap (1000 resamples).</p>
+
+  <div class="bar-chart">
+    <div class="bar-row">
+      <span class="bar-label">ROUGE-1</span>
+      <div class="bar-track">
+        <div class="bar-fill base" style="width: 41.8%;">0.418</div>
+      </div>
+      <span class="bar-delta"></span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label"></span>
+      <div class="bar-track">
+        <div class="bar-fill tuned" style="width: 58.6%;">0.586</div>
+      </div>
+      <span class="bar-delta">+16.8%</span>
+    </div>
+
+    <div class="bar-row" style="margin-top: 0.6rem;">
+      <span class="bar-label">ROUGE-2</span>
+      <div class="bar-track">
+        <div class="bar-fill base" style="width: 36.9%;">0.185</div>
+      </div>
+      <span class="bar-delta"></span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label"></span>
+      <div class="bar-track">
+        <div class="bar-fill tuned" style="width: 62.3%;">0.311</div>
+      </div>
+      <span class="bar-delta">+12.7%</span>
+    </div>
+
+    <div class="bar-row" style="margin-top: 0.6rem;">
+      <span class="bar-label">ROUGE-L</span>
+      <div class="bar-track">
+        <div class="bar-fill base" style="width: 38.5%;">0.289</div>
+      </div>
+      <span class="bar-delta"></span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-label"></span>
+      <div class="bar-track">
+        <div class="bar-fill tuned" style="width: 55.6%;">0.417</div>
+      </div>
+      <span class="bar-delta">+12.9%</span>
+    </div>
+  </div>
+
+  <p style="font-size: 0.85rem; color: #888;">
+    Gray = base model. Blue = fine-tuned. Green = improvement delta.
+  </p>
+
+  <hr>
+
+  <!-- Training dynamics -->
+  <h2>Training Dynamics</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>Loss Curve</h3>
+      <table>
+        <tr><th>Iter</th><th>Train Loss</th><th>Event</th></tr>
+        <tr><td>1</td><td>-</td><td>Val loss: 2.345</td></tr>
+        <tr><td>5</td><td>1.922</td><td></td></tr>
+        <tr><td>20</td><td>1.245</td><td></td></tr>
+        <tr><td>40</td><td>0.783</td><td>Checkpoint saved</td></tr>
+        <tr><td>60</td><td>0.350</td><td></td></tr>
+        <tr><td>80</td><td>0.346</td><td>Checkpoint saved</td></tr>
+        <tr><td>100</td><td>0.176</td><td></td></tr>
+        <tr><td>120</td><td>0.144</td><td>Val loss: 0.730</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Configuration</h3>
+      <table>
+        <tr><td>Model</td><td>Qwen 2.5 0.5B Instruct</td></tr>
+        <tr><td>Method</td><td>LoRA (rank 8, 16 layers)</td></tr>
+        <tr><td>Trainable params</td><td>2.9M / 494M (0.59%)</td></tr>
+        <tr><td>Training time</td><td>5 minutes (Apple Silicon)</td></tr>
+        <tr><td>Peak memory</td><td>9.0 GB</td></tr>
+        <tr><td>Epochs</td><td>3</td></tr>
+        <tr><td>Batch size</td><td>4</td></tr>
+        <tr><td>Learning rate</td><td>1e-4</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Data quality breakdown -->
+  <h2>Data Quality Breakdown</h2>
+  <div class="grid-2">
+    <div class="card">
+      <h3>LLM-as-Judge Scores</h3>
+      <p>GPT-4.1-mini scored every example on 4 dimensions:
+        faithfulness, helpfulness, complexity, coherence.</p>
+      <table>
+        <tr><th>Rating</th><th>Count</th><th>Fraction</th></tr>
+        <tr><td>5 / 5</td><td>173</td><td>86%</td></tr>
+        <tr><td>4 / 5</td><td>27</td><td>14%</td></tr>
+        <tr><td>3 / 5 or below</td><td>0</td><td>0%</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Difficulty Distribution</h3>
+      <p>Heuristic calibration based on output length, vocabulary complexity,
+        and reasoning depth.</p>
+      <table>
+        <tr><th>Level</th><th>Count</th><th>Fraction</th></tr>
+        <tr><td>Easy</td><td>2</td><td>1%</td></tr>
+        <tr><td>Medium</td><td>76</td><td>38%</td></tr>
+        <tr><td>Hard</td><td>122</td><td>61%</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Sample examples -->
+  <h2>Sample Generated Examples</h2>
+  <p>Real examples from the pipeline output, unedited.</p>
+
+  <div class="example-tabs">
+    <button class="active" onclick="showTab('qa')">Q&A</button>
+    <button onclick="showTab('summary')">Summary</button>
+    <button onclick="showTab('instruction')">Instruction</button>
+    <button onclick="showTab('cot')">Chain of Thought</button>
+  </div>
+
+  <div id="tab-qa" class="example-panel active">
+    <div class="field-label">Input</div>
+    <div class="field-value">Read the following passage and generate ONE useful question and its answer.
+
+Passage: Common evaluation metrics include: Accuracy (fraction of correct predictions), Precision (fraction of positive predictions that are correct), Recall (fraction of actual positives correctly identified), and F1 Score (harmonic mean of precision and recall).</div>
+    <div class="field-label">Output</div>
+    <div class="field-value">Question: What are some common evaluation metrics used for classification tasks, and what do they measure?
+
+Answer: Common evaluation metrics for classification tasks include Accuracy, which measures the fraction of correct predictions; Precision, which measures the fraction of positive predictions that are correct; Recall, which measures the fraction of actual positives correctly identified; and F1 Score, which is the harmonic mean of precision and recall.</div>
+    <div class="meta">Judge score: 4.75 / 5 | Difficulty: medium</div>
+  </div>
+
+  <div id="tab-summary" class="example-panel">
+    <div class="field-label">Input</div>
+    <div class="field-value">Summarise the following text:
+
+The authors introduce FLAIR, a pre-trained vision-language model for universal retinal fundus image understanding. They compiled 38 open-access fundus imaging datasets, encompassing 101 target conditions and 288,307 images.</div>
+    <div class="field-label">Output</div>
+    <div class="field-value">The text discusses the challenges of applying vision-language models to medical imaging due to domain shifts and complex expert knowledge. To address this, the authors introduce FLAIR, a pre-trained vision-language model designed for comprehensive retinal fundus image analysis. They compiled 38 open-access fundus imaging datasets, encompassing 101 target conditions and 288,307 images. FLAIR incorporates expert domain knowledge through descriptive textual prompts during pre-training and zero-shot evaluation.</div>
+    <div class="meta">Judge score: 4.75 / 5 | Difficulty: medium</div>
+  </div>
+
+  <div id="tab-instruction" class="example-panel">
+    <div class="field-label">Input</div>
+    <div class="field-value">Based on the following passage, generate a realistic user instruction and then write the ideal response.
+
+Passage: Foundation models are large-scale machine learning models designed to be adaptable across a wide range of downstream tasks.</div>
+    <div class="field-label">Output</div>
+    <div class="field-value">INSTRUCTION: Can you explain what foundation models are and why they are important in fields like computer vision and natural language processing?
+
+RESPONSE: Foundation models are large-scale machine learning models that are designed to be adaptable across a wide range of downstream tasks. Unlike models trained for a specific purpose, foundation models serve as a versatile base that can be fine-tuned or adapted to various applications.</div>
+    <div class="meta">Judge score: 4.75 / 5 | Difficulty: hard</div>
+  </div>
+
+  <div id="tab-cot" class="example-panel">
+    <div class="field-label">Input</div>
+    <div class="field-value">Based on the following passage, create a question that requires multi-step reasoning to answer. Then provide a detailed chain-of-thought answer.
+
+Passage: The Chinchilla scaling laws suggest that a model with N parameters should be trained on approximately 20N tokens for optimal compute efficiency.</div>
+    <div class="field-label">Output</div>
+    <div class="field-value">QUESTION: If a Transformer model has 5 billion parameters, how many training tokens should it be trained on for optimal compute efficiency, and why does this approach differ from previous practices?
+
+REASONING:
+Step 1: Identify the relationship. The passage states a model with N parameters should be trained on approximately 20N tokens.
+Step 2: Calculate. For N = 5 billion: 20 x 5 billion = 100 billion tokens.
+Step 3: Compare to previous practice. Earlier approaches trained increasingly large models on fixed datasets, rather than scaling data proportionally.
+
+ANSWER: 100 billion tokens, because the Chinchilla laws show model size and training data should scale together.</div>
+    <div class="meta">Judge score: 5.0 / 5 | Difficulty: hard</div>
+  </div>
+
+  <hr>
+
+  <!-- Pipeline timing -->
+  <h2>Pipeline Timing</h2>
+  <table>
+    <tr><th>Step</th><th>Time</th><th>Notes</th></tr>
+    <tr><td>Generate (GPT-4.1-mini)</td><td>9 min 31 sec</td><td>200 examples, 4 task types, 162 chunks</td></tr>
+    <tr><td>Quality scoring</td><td>0.6 sec</td><td>Heuristic flags (no API calls)</td></tr>
+    <tr><td>Deduplication</td><td>0.4 sec</td><td>Hash-based, zero duplicates</td></tr>
+    <tr><td>LLM-as-Judge</td><td>17 min 5 sec</td><td>200 examples x 4 scoring dimensions</td></tr>
+    <tr><td>Difficulty calibration</td><td>0.6 sec</td><td>Heuristic (no API calls)</td></tr>
+    <tr><td>Train/test split</td><td>0.3 sec</td><td>80/20 stratified by task type</td></tr>
+    <tr><td>LoRA fine-tuning</td><td>5 min 0 sec</td><td>120 iterations, Qwen 2.5 0.5B, Apple Silicon</td></tr>
+    <tr><td>Benchmark</td><td>2 min 25 sec</td><td>40 test examples, base + fine-tuned inference</td></tr>
+    <tr><td><strong>Total</strong></td><td><strong>~35 min</strong></td><td>Cost: ~$5</td></tr>
+  </table>
+
+  <hr>
+
+  <!-- Quick start -->
+  <h2>Try It</h2>
+  <pre><code>git clone https://github.com/pugalenthimagendran/training-data-factory.git
+cd training-data-factory
+make install
+
+# Dry run (no API key needed)
+make forge
+
+# Full pipeline
+export OPENAI_API_KEY=sk-...
+make forge-live</code></pre>
+
+  <div style="margin-top: 2rem; padding: 2rem 0; border-top: 1px solid #e5e7eb; font-size: 0.85rem; color: #888;">
+    <a href="overview.html">Read the overview</a> for a plain-English explanation, or
+    the <a href="technical.html">technical deep-dive</a> for implementation details.
+  </div>
+
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.example-panel').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.querySelectorAll('.example-tabs button').forEach(function(el) {
+    el.classList.remove('active');
+  });
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

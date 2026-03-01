@@ -1,37 +1,12 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+from .io import load_jsonl, write_jsonl
 from .logging_config import get_logger
 
 logger = get_logger("training_data_robo.exporters")
-
-
-def load_jsonl(path: Path) -> List[Dict[str, Any]]:
-    """Load a JSONL file into a list of dicts."""
-    records: List[Dict[str, Any]] = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                records.append(json.loads(line))
-            except json.JSONDecodeError:
-                logger.warning("Skipping malformed JSONL line in %s", path)
-                continue
-    return records
-
-
-def write_jsonl(path: Path, records: Iterable[Dict[str, Any]]) -> None:
-    """Write an iterable of dicts as JSONL."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for rec in records:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
-    logger.info("Wrote %s", path)
 
 
 # ---------- Fine-tuning exporter ----------

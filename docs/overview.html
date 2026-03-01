@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forge - Overview</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">Forge</a>
+  <div class="links">
+    <a href="index.html">Demo</a>
+    <a href="overview.html" class="active">Overview</a>
+    <a href="technical.html">Technical</a>
+    <a href="https://github.com/pugalenthimagendran/training-data-factory">GitHub</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <h1>What Forge Does (And Why It Matters)</h1>
+  <p class="subtitle">A plain-English explanation of the project, the problem it solves,
+    and the approach it takes. No machine learning background required.</p>
+
+  <h2>The Analogy</h2>
+
+  <p>
+    Think about how a school prepares students for an exam. The teacher does not hand them
+    a stack of random textbook pages and say "good luck." There is a process. The teacher
+    reads the material, designs practice exercises at different difficulty levels, reviews
+    those exercises for errors, removes any that are duplicates, checks that the practice
+    questions do not overlap with the actual exam, and then has the students study. After
+    studying, the teacher gives a test to measure how much they learned.
+  </p>
+
+  <p>
+    Forge does exactly this, but for AI models instead of students.
+  </p>
+
+  <p>
+    The "textbooks" are your documents. The "practice exercises" are training examples that
+    Forge generates automatically. The "teacher review" is a quality evaluation pipeline.
+    The "study session" is model fine-tuning. And the "before-and-after test" is a benchmark
+    that proves the training actually worked.
+  </p>
+
+  <h2>The Problem</h2>
+
+  <p>
+    AI language models learn to perform specific tasks by studying examples. If you want a
+    model to answer medical questions, you show it thousands of medical Q&A pairs. If you
+    want it to summarize legal documents, you show it examples of legal summaries. These
+    examples are called training data, and their quality directly controls how well the
+    model performs.
+  </p>
+
+  <p>
+    The problem is that most people who build training data take shortcuts. They generate
+    a batch of question-answer pairs from their documents, skim through a handful to check
+    they look reasonable, and call it done. There is no systematic quality review, no check
+    for duplicate or contaminated data, no measurement of whether the data actually improves
+    anything. It is a "trust me, it's fine" approach.
+  </p>
+
+  <p>
+    This is like a teacher writing an exam prep booklet, never proofreading it, handing it
+    to students, and then claiming it helped without ever giving a test.
+  </p>
+
+  <h2>What Forge Does</h2>
+
+  <p>
+    Forge is a pipeline that takes documents as input and produces verified, high-quality
+    training data as output. It does not stop at generation. It evaluates, filters, and
+    ultimately proves that the data works by training a model and measuring the improvement.
+  </p>
+
+  <p>Here is each step, in order:</p>
+
+  <h3>Step 1: Read and break down the documents</h3>
+  <p>
+    Forge reads your source documents (text files, PDFs, web pages) and splits them into
+    smaller chunks. It does not split blindly by paragraph count. It looks at the structure
+    of the text, respecting section headers, lists, and tables, so that each chunk is a
+    coherent unit that makes sense on its own.
+  </p>
+
+  <h3>Step 2: Generate training exercises</h3>
+  <p>
+    For each chunk, Forge generates multiple types of training examples using a language
+    model (GPT-4.1-mini by default). Instead of just Q&A, it creates four types of exercises:
+  </p>
+  <ul style="margin-bottom: 1rem; padding-left: 1.5rem;">
+    <li><strong>Questions and answers</strong> that test comprehension of the material</li>
+    <li><strong>Summaries</strong> that condense the key points</li>
+    <li><strong>Instructions and responses</strong> that simulate real user requests</li>
+    <li><strong>Chain-of-thought reasoning</strong> that requires multi-step problem solving</li>
+  </ul>
+  <p>
+    This variety matters. A model trained on diverse exercise types becomes more versatile
+    than one trained only on Q&A pairs.
+  </p>
+
+  <h3>Step 3: Check for obvious quality issues</h3>
+  <p>
+    Forge runs each example through a set of heuristic checks: is the output empty? Is it
+    too short for the task type? Does it contain common refusal phrases like "as an AI language
+    model, I cannot..."? Is it repetitive? Each example gets a quality score and a list of
+    flags describing any issues found.
+  </p>
+
+  <h3>Step 4: Remove duplicates</h3>
+  <p>
+    Duplicate or near-duplicate examples bias the model toward certain patterns and waste
+    training budget. Forge identifies and removes duplicates using hash-based comparison.
+  </p>
+
+  <h3>Step 5: Have an AI reviewer grade every example</h3>
+  <p>
+    This is one of the most important steps. A separate language model (acting as a "judge")
+    reads each example and scores it on four dimensions:
+  </p>
+  <ul style="margin-bottom: 1rem; padding-left: 1.5rem;">
+    <li><strong>Faithfulness:</strong> Does the output accurately reflect the source material?</li>
+    <li><strong>Helpfulness:</strong> Would this example actually teach a model something useful?</li>
+    <li><strong>Complexity:</strong> Is the example substantive enough to be worth training on?</li>
+    <li><strong>Coherence:</strong> Is the output well-structured and easy to follow?</li>
+  </ul>
+  <p>
+    Each dimension gets a score from 1 to 5 with a written explanation. In the demo run,
+    the average score was 4.77 out of 5, and 86% of examples scored a perfect 5/5.
+  </p>
+
+  <h3>Step 6: Check for exam leakage</h3>
+  <p>
+    This is a problem that most training data projects ignore entirely. If your training
+    data accidentally overlaps with standard evaluation benchmarks (the tests used to measure
+    AI performance), then your benchmark results become meaningless. It is like giving
+    students the answer key before the exam and then claiming they aced it.
+  </p>
+  <p>
+    Forge checks for this by comparing the text of every training example against known
+    benchmark datasets using n-gram matching. Any overlap gets flagged.
+  </p>
+
+  <h3>Step 7: Tag difficulty levels</h3>
+  <p>
+    Each example gets classified as easy, medium, or hard based on characteristics like output
+    length, vocabulary complexity, and reasoning depth. This allows you to balance the training
+    set by difficulty or use curriculum-based training strategies where the model starts with
+    easier examples and progresses to harder ones.
+  </p>
+
+  <h3>Step 8: Split into training and test sets</h3>
+  <p>
+    The data is split into a training set (80%) and a held-out test set (20%). The split is
+    stratified, meaning each task type is represented equally in both sets. The test set is
+    never used for training. It exists only for evaluation.
+  </p>
+
+  <h3>Step 9: Train a model</h3>
+  <p>
+    Forge fine-tunes a small language model (Qwen 2.5 with 500 million parameters) locally
+    on your machine using LoRA, a technique that trains only a tiny fraction of the model's
+    parameters (0.59% in this case) while keeping the rest frozen. This runs entirely on Apple
+    Silicon hardware with no cloud GPU needed. In the demo run, training took 5 minutes and
+    used 9 GB of memory.
+  </p>
+
+  <h3>Step 10: Prove it worked</h3>
+  <p>
+    The final step runs both the original model and the fine-tuned model on the held-out test
+    set and compares their outputs against the reference answers. Forge computes ROUGE scores
+    (a standard metric that measures overlap between generated text and reference text) and
+    runs a statistical significance test to confirm the improvement is real and not due to
+    random chance.
+  </p>
+
+  <h2>The Results</h2>
+
+  <p>In the demo run:</p>
+
+  <table>
+    <tr><th>What was measured</th><th>Before training</th><th>After training</th><th>Change</th></tr>
+    <tr><td>ROUGE-1 (word overlap)</td><td>41.8%</td><td>58.6%</td><td>+16.8%</td></tr>
+    <tr><td>ROUGE-2 (phrase overlap)</td><td>18.5%</td><td>31.1%</td><td>+12.7%</td></tr>
+    <tr><td>ROUGE-L (longest match)</td><td>28.9%</td><td>41.7%</td><td>+12.9%</td></tr>
+  </table>
+
+  <p>
+    The significance test returned p = 0.0, meaning there is essentially zero probability
+    that this improvement happened by chance. The training data genuinely made the model better
+    at the target domain.
+  </p>
+
+  <h2>Why This Matters</h2>
+
+  <p>
+    Most training data projects end at step 2. They generate data and assume it is good.
+    Forge goes further in several ways that matter for real-world reliability:
+  </p>
+
+  <p>
+    <strong>Verification over assumption.</strong> Every example is scored by an independent
+    reviewer. You know exactly what your data quality looks like before you spend time
+    training on it.
+  </p>
+
+  <p>
+    <strong>Contamination awareness.</strong> Benchmark contamination is a widespread problem
+    in the field. Checking for it is straightforward, but almost nobody does it. Forge does.
+  </p>
+
+  <p>
+    <strong>Closed loop.</strong> The most convincing evidence that training data works is a
+    model that demonstrably improves after training on it. Forge closes this loop automatically,
+    with statistical significance testing to back up the claim.
+  </p>
+
+  <p>
+    <strong>Reproducibility.</strong> Every run produces a timestamped directory with the full
+    pipeline log, configuration, intermediate artifacts, and final results. You can compare
+    runs, inspect individual examples, and trace any output back to its source.
+  </p>
+
+  <hr>
+
+  <p style="font-size: 0.9rem; color: #666;">
+    For implementation details, read the
+    <a href="technical.html">technical deep-dive</a>.
+    To see the numbers and sample data, check the <a href="index.html">demo page</a>.
+  </p>
+
+</div>
+</body>
+</html>

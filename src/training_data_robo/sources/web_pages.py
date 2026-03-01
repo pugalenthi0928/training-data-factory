@@ -5,7 +5,7 @@ from typing import Iterable, List
 
 import requests
 
-from ..models import Document, DocumentSource
+from ..models import Document
 from .base import BaseLoader
 
 

@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-import pandas as pd
-
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from training_data_robo.io import load_jsonl, write_jsonl
 
 REFUSAL_PATTERNS: List[str] = [
     "as an ai language model",
@@ -23,40 +24,22 @@ REFUSAL_PATTERNS: List[str] = [
 ]
 
 
-def load_jsonl(path: Path) -> pd.DataFrame:
-    records: List[Dict[str, Any]] = []
-    with path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                records.append(json.loads(line))
-            except json.JSONDecodeError:
-                continue
-    if not records:
-        return pd.DataFrame()
-    return pd.DataFrame(records)
-
-
-def normalise_schema(df: pd.DataFrame) -> pd.DataFrame:
-    if "input_text" not in df.columns:
-        if "input" in df.columns:
-            df["input_text"] = df["input"].astype(str)
-        elif "context" in df.columns:
-            df["input_text"] = df["context"].astype(str)
-        elif "question" in df.columns:
-            df["input_text"] = df["question"].astype(str)
+def normalise_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    if "input_text" not in row:
+        for fallback in ("input", "context", "question"):
+            if fallback in row:
+                row["input_text"] = str(row[fallback])
+                break
         else:
-            df["input_text"] = ""
-    if "output_text" not in df.columns:
-        if "output" in df.columns:
-            df["output_text"] = df["output"].astype(str)
-        elif "answer" in df.columns:
-            df["output_text"] = df["answer"].astype(str)
+            row["input_text"] = ""
+    if "output_text" not in row:
+        for fallback in ("output", "answer"):
+            if fallback in row:
+                row["output_text"] = str(row[fallback])
+                break
         else:
-            df["output_text"] = ""
-    return df
+            row["output_text"] = ""
+    return row
 
 
 def score_example(row: Dict[str, Any]) -> Tuple[List[str], float]:
@@ -80,9 +63,7 @@ def score_example(row: Dict[str, Any]) -> Tuple[List[str], float]:
         min_len = 80
     elif "key_points" in task_name or "keypoints" in task_name:
         min_len = 60
-    elif "title" in task_name:
-        min_len = 10
-    elif task_type == "qa" or "qa" in task_name:
+    elif "title" in task_name or task_type == "qa" or "qa" in task_name:
         min_len = 10
     if min_len and out_len < min_len:
         flags.append("short_output")
@@ -146,18 +127,16 @@ def main() -> None:
     if not in_path.exists():
         raise SystemExit(f"Input file not found: {in_path}")
 
-    df = load_jsonl(in_path)
-    if df.empty:
+    records = load_jsonl(in_path)
+    if not records:
         raise SystemExit("Dataset is empty; nothing to process.")
 
-    df = normalise_schema(df)
-
     flag_counter: Counter[str] = Counter()
-    num_rows = len(df)
-    records = df.to_dict(orient="records")
+    num_rows = len(records)
     processed: List[Dict[str, Any]] = []
 
     for row in records:
+        row = normalise_row(row)
         flags, score = score_example(row)
         row["quality_flags"] = flags
         row["quality_score"] = score
@@ -165,9 +144,7 @@ def main() -> None:
             flag_counter[f] += 1
         processed.append(row)
 
-    with out_path.open("w", encoding="utf-8") as f:
-        for row in processed:
-            f.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+    write_jsonl(out_path, processed)
 
     summary = {
         "num_examples": num_rows,

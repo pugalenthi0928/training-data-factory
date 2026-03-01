@@ -111,6 +111,51 @@ class TaskType(str, Enum):
     KEY_POINTS = "key_points"
     TITLE = "title"
     CLASSIFICATION = "classification"
+    INSTRUCTION_FOLLOWING = "instruction_following"
+    CHAIN_OF_THOUGHT = "chain_of_thought"
+
+
+class ChunkType(str, Enum):
+    PROSE = "prose"
+    LIST = "list"
+    TABLE = "table"
+    MIXED = "mixed"
+
+
+class DifficultyLevel(str, Enum):
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+@dataclass
+class QualityDimension:
+    name: str
+    description: str
+    min_score: int = 1
+    max_score: int = 5
+
+
+@dataclass
+class JudgeRubric:
+    dimensions: List[QualityDimension] = field(default_factory=lambda: [
+        QualityDimension(
+            name="faithfulness",
+            description="Output is factually consistent with the source text.",
+        ),
+        QualityDimension(
+            name="helpfulness",
+            description="Output would be useful for training a model on this task.",
+        ),
+        QualityDimension(
+            name="complexity",
+            description="Question/instruction requires non-trivial reasoning.",
+        ),
+        QualityDimension(
+            name="coherence",
+            description="Output is well-structured, grammatical, and flows logically.",
+        ),
+    ])
 
 
 @dataclass

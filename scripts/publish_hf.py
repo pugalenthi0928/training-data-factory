@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-import argparse, os, sys
+import argparse
+import os
+import sys
 from pathlib import Path
+
 from huggingface_hub import HfApi, create_repo, hf_hub_url
+
 
 def main():
     ap = argparse.ArgumentParser(description="Publish files to a Hugging Face Dataset repo.")

@@ -4,7 +4,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 def write_jsonl(path: Path, rows: List[Dict[str, Any]]) -> None:

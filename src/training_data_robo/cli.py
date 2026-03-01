@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import List
 
-from . import TrainingDataBot, TaskTemplate, TaskType, Settings
+from . import Settings, TaskTemplate, TaskType, TrainingDataBot
 
 
 def build_task_templates_from_names(names: List[str]) -> List[TaskTemplate]:
@@ -88,6 +88,63 @@ def build_task_templates_from_names(names: List[str]) -> List[TaskTemplate]:
                     top_p=0.9,
                 )
             )
+        elif name in ("instruction", "instruction_following"):
+            templates.append(
+                TaskTemplate(
+                    name="instruction_v1",
+                    version="v1",
+                    task_type=TaskType.INSTRUCTION_FOLLOWING,
+                    system_prompt=(
+                        "You are an expert at creating realistic user instructions "
+                        "and ideal assistant responses. Given a passage, generate "
+                        "a plausible user instruction that someone might ask about "
+                        "the topic, and then provide a thorough, helpful response "
+                        "grounded in the passage content."
+                    ),
+                    user_prompt_template=(
+                        "Based on the following passage, generate a realistic user "
+                        "instruction (a task or request someone might ask an AI "
+                        "assistant) and then write the ideal response.\n\n"
+                        "Format your output as:\n"
+                        "INSTRUCTION: <the user instruction>\n"
+                        "RESPONSE: <the ideal assistant response>\n\n"
+                        "Passage:\n\n{text}"
+                    ),
+                    max_output_tokens=512,
+                    temperature=0.4,
+                    top_p=1.0,
+                )
+            )
+        elif name in ("cot", "chain_of_thought"):
+            templates.append(
+                TaskTemplate(
+                    name="cot_v1",
+                    version="v1",
+                    task_type=TaskType.CHAIN_OF_THOUGHT,
+                    system_prompt=(
+                        "You are an expert at creating multi-step reasoning "
+                        "questions. Given a passage, write a question that requires "
+                        "combining multiple facts or performing logical inference, "
+                        "then provide a step-by-step chain-of-thought answer."
+                    ),
+                    user_prompt_template=(
+                        "Based on the following passage, create a question that "
+                        "requires multi-step reasoning to answer. Then provide "
+                        "a detailed chain-of-thought answer.\n\n"
+                        "Format your output as:\n"
+                        "QUESTION: <a reasoning question>\n"
+                        "REASONING:\n"
+                        "Step 1: <first reasoning step>\n"
+                        "Step 2: <second reasoning step>\n"
+                        "...\n"
+                        "ANSWER: <final answer>\n\n"
+                        "Passage:\n\n{text}"
+                    ),
+                    max_output_tokens=512,
+                    temperature=0.3,
+                    top_p=1.0,
+                )
+            )
         else:
             # Ignore unknown names; we'll validate below.
             continue
@@ -95,7 +152,7 @@ def build_task_templates_from_names(names: List[str]) -> List[TaskTemplate]:
     if not templates:
         raise SystemExit(
             f"No valid tasks in {names!r}. "
-            "Supported: summary, qa, key_points, title."
+            "Supported: summary, qa, key_points, title, instruction, cot."
         )
 
     return templates
@@ -163,7 +220,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="summary",
         help=(
             "Comma-separated tasks to run. "
-            "Supported: summary, qa, key_points, title (default: summary)."
+            "Supported: summary, qa, key_points, title, instruction, cot (default: summary)."
         ),
     )
     p_process.add_argument(

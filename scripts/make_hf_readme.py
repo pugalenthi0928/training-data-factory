@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-import json, argparse
+import argparse
+import json
 from pathlib import Path
+
 
 def main():
     ap = argparse.ArgumentParser()

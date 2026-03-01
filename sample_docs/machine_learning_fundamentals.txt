@@ -1,0 +1,71 @@
+# Machine Learning Fundamentals
+
+## What is Machine Learning?
+
+Machine learning is a subset of artificial intelligence that enables computers to learn from data without being explicitly programmed. Instead of writing specific rules for every possible scenario, machine learning algorithms identify patterns in training data and use those patterns to make predictions or decisions on new, unseen data.
+
+The field has three main paradigms: supervised learning, unsupervised learning, and reinforcement learning. Each paradigm addresses different types of problems and uses different approaches to extract knowledge from data.
+
+## Supervised Learning
+
+Supervised learning is the most common paradigm in machine learning. The algorithm learns from labeled training data, where each example consists of an input paired with the correct output. The goal is to learn a mapping function from inputs to outputs that generalizes well to new examples.
+
+Common supervised learning tasks include classification (predicting a categorical label) and regression (predicting a continuous value). For example, email spam detection is a classification task where the model learns to categorize emails as spam or not-spam based on features like word frequency, sender information, and email structure.
+
+Key algorithms in supervised learning include:
+
+- Linear regression for predicting continuous outcomes
+- Logistic regression for binary classification
+- Decision trees that split data based on feature thresholds
+- Random forests that combine multiple decision trees for better accuracy
+- Support vector machines that find optimal decision boundaries
+- Neural networks that learn hierarchical feature representations
+
+## Unsupervised Learning
+
+Unsupervised learning works with unlabeled data, meaning the algorithm must discover structure and patterns without being told what to look for. This paradigm is useful when labeled data is expensive or unavailable.
+
+Clustering is the most common unsupervised learning task. K-means clustering partitions data into k groups by minimizing the distance between data points and their assigned cluster centers. Hierarchical clustering builds a tree of clusters by iteratively merging or splitting groups. DBSCAN identifies clusters as dense regions of data points separated by sparse regions.
+
+Dimensionality reduction is another important unsupervised technique. Principal Component Analysis (PCA) projects high-dimensional data onto a lower-dimensional space while preserving maximum variance. t-SNE and UMAP are non-linear techniques particularly useful for visualizing high-dimensional data in two or three dimensions.
+
+## Model Evaluation
+
+Evaluating machine learning models requires careful methodology to avoid overfitting and ensure reliable performance estimates.
+
+The train-test split is the simplest evaluation strategy: divide data into a training set (typically 70-80%) and a test set (20-30%). The model is trained on the training set and evaluated on the held-out test set. However, this approach can produce unreliable estimates with small datasets.
+
+Cross-validation provides more robust evaluation by repeatedly splitting data into training and validation folds. In k-fold cross-validation, the data is divided into k equal parts. The model is trained k times, each time using a different fold as validation and the remaining folds for training. The average performance across all folds gives a more reliable estimate.
+
+Common evaluation metrics include:
+
+| Task | Metric | Description |
+|------|--------|-------------|
+| Classification | Accuracy | Fraction of correct predictions |
+| Classification | Precision | Fraction of positive predictions that are correct |
+| Classification | Recall | Fraction of actual positives correctly identified |
+| Classification | F1 Score | Harmonic mean of precision and recall |
+| Regression | MSE | Mean squared error between predictions and targets |
+| Regression | MAE | Mean absolute error between predictions and targets |
+| Regression | R-squared | Proportion of variance explained by the model |
+
+## Overfitting and Regularization
+
+Overfitting occurs when a model learns the training data too well, including noise and irrelevant patterns, resulting in poor performance on new data. A model that memorizes training examples instead of learning general patterns will have high training accuracy but low test accuracy.
+
+Regularization techniques help prevent overfitting by adding constraints to the model:
+
+1. L1 regularization (Lasso) adds the absolute value of weights to the loss function, encouraging sparse models where many weights become exactly zero.
+2. L2 regularization (Ridge) adds the squared magnitude of weights, encouraging smaller but non-zero weights across all features.
+3. Dropout randomly deactivates neurons during training, preventing the network from relying too heavily on any single feature.
+4. Early stopping monitors validation performance during training and stops when performance begins to degrade.
+
+The bias-variance tradeoff is the fundamental challenge in machine learning. High bias means the model is too simple to capture the underlying pattern (underfitting). High variance means the model is too sensitive to the training data (overfitting). The goal is to find the sweet spot that minimizes total error.
+
+## Feature Engineering
+
+Feature engineering is the process of creating informative input features from raw data. Good features can dramatically improve model performance, often more than choosing a more complex algorithm.
+
+Common feature engineering techniques include normalization (scaling features to a standard range), one-hot encoding (converting categorical variables to binary vectors), polynomial features (creating interaction terms between features), and domain-specific transformations (such as extracting day-of-week from timestamps or computing TF-IDF from text).
+
+Feature selection removes irrelevant or redundant features that can degrade model performance and increase computational cost. Methods include filter approaches (correlation analysis, mutual information), wrapper approaches (forward selection, backward elimination), and embedded approaches (L1 regularization, tree-based feature importance).

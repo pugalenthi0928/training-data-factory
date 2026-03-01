@@ -1,5 +1,8 @@
+import json
+import subprocess
+import sys
 from pathlib import Path
-import json, subprocess, sys
+
 
 def wjsonl(p: Path, rows):
     with p.open("w", encoding="utf-8") as f:

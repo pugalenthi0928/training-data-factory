@@ -1,32 +1,19 @@
 #!/usr/bin/env python3
-import argparse, json, math, re
+import argparse
+import json
+import math
+import re
+import sys
 from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from training_data_robo.io import load_jsonl, write_jsonl
 
 REFUSAL_PATTERNS = [
     "as an ai language model","i cannot","i'm unable","i am unable","i won't","cannot assist","i do not have access",
 ]
-STOPWORDS = set("""
-a an the and or but if while of for from to into onto in on at by with without within
-over under above below between among across after before during since until than then
-is are was were be being been am do does did doing have has had having can could may might must should would will
-you your yours they them their theirs we us our ours he she it its his her hers this that these those
-""".split())
-
-def load_jsonl(p: Path):
-    rows = []
-    with p.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                rows.append(json.loads(line))
-    return rows
-
-def write_jsonl(p: Path, rows):
-    p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("w", encoding="utf-8") as f:
-        for r in rows:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+STOPWORDS = set(["a", "an", "the", "and", "or", "but", "if", "while", "of", "for", "from", "to", "into", "onto", "in", "on", "at", "by", "with", "without", "within", "over", "under", "above", "below", "between", "among", "across", "after", "before", "during", "since", "until", "than", "then", "is", "are", "was", "were", "be", "being", "been", "am", "do", "does", "did", "doing", "have", "has", "had", "having", "can", "could", "may", "might", "must", "should", "would", "will", "you", "your", "yours", "they", "them", "their", "theirs", "we", "us", "our", "ours", "he", "she", "it", "its", "his", "her", "hers", "this", "that", "these", "those"])
 
 def get_text(row, *cands):
     for c in cands:

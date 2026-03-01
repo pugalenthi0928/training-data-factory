@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import List, Sequence, Optional
+from typing import List, Optional, Sequence
 
 from .ai_client import BaseLLMClient
-from .models import TextChunk, TaskTemplate, TrainingExample
+from .models import TaskTemplate, TextChunk, TrainingExample
 
 
 class TaskManager:

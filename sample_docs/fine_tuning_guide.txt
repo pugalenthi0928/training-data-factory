@@ -1,0 +1,110 @@
+# Fine-Tuning Language Models: A Practical Guide
+
+## Why Fine-Tune?
+
+Pre-trained language models like GPT, LLaMA, and Qwen learn general language understanding from massive internet corpora. However, they may not perform optimally on specific domains or tasks out of the box. Fine-tuning adapts a pre-trained model to a particular use case by continuing training on a smaller, task-specific dataset.
+
+Fine-tuning offers several advantages over training from scratch: it requires far less data (hundreds to thousands of examples vs. billions of tokens), it converges much faster (minutes to hours vs. weeks), and it preserves the general language capabilities learned during pre-training while adding domain expertise.
+
+## Full Fine-Tuning vs. Parameter-Efficient Methods
+
+Full fine-tuning updates all model parameters during training. This provides maximum flexibility but requires significant GPU memory (the full model plus optimizer states must fit in memory) and risks catastrophic forgetting — the model losing its general capabilities as it specializes.
+
+Parameter-efficient fine-tuning (PEFT) methods update only a small fraction of parameters while keeping the rest frozen. The most popular PEFT methods include:
+
+### LoRA (Low-Rank Adaptation)
+
+LoRA decomposes weight updates into low-rank matrices. Instead of updating a weight matrix W directly, LoRA adds a low-rank decomposition: W' = W + BA, where B and A are small matrices with rank r (typically 4-64). This reduces the number of trainable parameters by 100-1000x while achieving performance comparable to full fine-tuning.
+
+Key LoRA hyperparameters:
+- Rank (r): Controls the expressiveness of the adaptation. Higher rank = more parameters = more capacity. Common values: 8-32.
+- Alpha: A scaling factor that controls the magnitude of the LoRA updates. The effective learning rate is proportional to alpha/rank.
+- Target modules: Which layers to apply LoRA to. Applying to attention projection matrices (Q, K, V, O) is standard; some recipes also include feed-forward layers.
+
+### QLoRA (Quantized LoRA)
+
+QLoRA combines LoRA with 4-bit quantization of the base model weights. The base model is quantized to 4-bit NormalFloat format (NF4), and LoRA adapters are trained in full precision on top. This allows fine-tuning a 7B parameter model on a single consumer GPU with 24GB VRAM.
+
+### Prefix Tuning and Prompt Tuning
+
+These methods prepend learnable "soft prompts" to the input. Only the prompt parameters are trained, keeping the entire model frozen. This is even more parameter-efficient than LoRA but generally achieves lower performance on complex tasks.
+
+## Data Preparation
+
+The quality of fine-tuning data matters more than quantity. A small dataset of high-quality, well-structured examples often outperforms a large noisy dataset.
+
+### Data Format
+
+Most fine-tuning frameworks expect data in chat format:
+
+```json
+{"messages": [
+  {"role": "system", "content": "You are a helpful coding assistant."},
+  {"role": "user", "content": "Write a Python function to sort a list."},
+  {"role": "assistant", "content": "def sort_list(items): ..."}
+]}
+```
+
+Each example should represent one complete interaction. Multi-turn conversations can include multiple user-assistant pairs in the messages array.
+
+### Data Quality Checklist
+
+Before fine-tuning, validate your dataset:
+
+1. Remove duplicate or near-duplicate examples that would bias the model
+2. Check for contamination against evaluation benchmarks — if your training data overlaps with test data, benchmark results will be inflated
+3. Ensure consistent formatting across all examples
+4. Remove examples with obviously wrong or harmful outputs
+5. Balance the dataset across different categories or difficulty levels
+6. Verify that examples are long enough to be meaningful but not so long they exceed the context window
+
+## Training Configuration
+
+### Learning Rate
+
+The learning rate is the most important hyperparameter for fine-tuning. Too high and the model diverges or forgets pre-training knowledge; too low and training is wasteful or fails to adapt.
+
+Typical ranges:
+- Full fine-tuning: 1e-5 to 5e-5
+- LoRA fine-tuning: 1e-4 to 3e-4
+- Large models (>13B): Use lower learning rates
+- Small datasets (<1000 examples): Use lower learning rates
+
+### Epochs and Overfitting
+
+Fine-tuning for too many epochs causes overfitting, where the model memorizes training examples instead of learning generalizable patterns. Signs of overfitting include training loss continuing to decrease while validation loss increases.
+
+For most fine-tuning tasks, 1-5 epochs is sufficient. Small datasets may benefit from more epochs with regularization; large datasets may only need 1 epoch. Always monitor validation loss and use early stopping if possible.
+
+### Batch Size
+
+Larger batch sizes provide more stable gradient estimates but require more memory. Gradient accumulation allows simulating larger batch sizes by accumulating gradients over multiple forward passes before updating weights.
+
+A common recipe is an effective batch size of 32-128, achieved through a combination of per-device batch size and gradient accumulation steps.
+
+## Evaluation
+
+### Automated Metrics
+
+Standard metrics for evaluating fine-tuned language models include:
+
+- Perplexity: Lower is better. Measures how surprised the model is by the test data. However, perplexity alone doesn't capture generation quality.
+- ROUGE: Measures n-gram overlap between generated text and reference outputs. ROUGE-L (longest common subsequence) is the most commonly used variant.
+- Exact Match: The fraction of predictions that exactly match the reference. Useful for factual QA tasks.
+- BERTScore: Uses contextual embeddings to measure semantic similarity, capturing paraphrases that exact match would miss.
+
+### Human Evaluation
+
+Automated metrics correlate imperfectly with actual quality. Human evaluation should complement automated metrics, especially for open-ended generation tasks. A practical approach is to have evaluators rate a random sample of 50-100 model outputs on a rubric covering correctness, helpfulness, and coherence.
+
+### LLM-as-Judge
+
+Using a stronger language model to evaluate outputs from the fine-tuned model is an increasingly popular middle ground between automated metrics and human evaluation. The judge model receives the input, reference output, and model output, then scores the model output on predefined criteria. This approach is cheaper and faster than human evaluation while being more nuanced than automated metrics.
+
+## Common Pitfalls
+
+1. Not splitting data properly: Always hold out a test set before fine-tuning. Never evaluate on data the model has seen during training.
+2. Ignoring catastrophic forgetting: After fine-tuning on a narrow domain, the model may lose general capabilities. Mixing general data with domain-specific data during fine-tuning mitigates this.
+3. Overfitting to small datasets: With fewer than 100 examples, the model can memorize rather than generalize. Use regularization, fewer epochs, and lower learning rates.
+4. Mismatched formats: If fine-tuning data uses a different format than the model's chat template, the model may not learn effectively. Always match the format expected by the model's tokenizer.
+5. Benchmark contamination: If training data overlaps with evaluation benchmarks, reported improvements are misleading. Always check for contamination before claiming results.

@@ -1,5 +1,7 @@
 from pathlib import Path
-import pandas as pd, matplotlib.pyplot as plt, json, datetime as dt
+
+import matplotlib.pyplot as plt
+import pandas as pd
 
 runs_csv = Path("runs/qa_runs.csv")
 reports = Path("reports"); reports.mkdir(exist_ok=True)

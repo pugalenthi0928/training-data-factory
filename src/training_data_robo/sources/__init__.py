@@ -1,8 +1,8 @@
 from .base import BaseLoader
-from .text_files import TextFileLoader
 from .pdf_files import PdfFileLoader
-from .web_pages import WebPageLoader
+from .text_files import TextFileLoader
 from .unified import UnifiedLoader
+from .web_pages import WebPageLoader
 
 __all__ = [
     "BaseLoader",

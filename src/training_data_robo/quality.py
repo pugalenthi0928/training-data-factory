@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Iterable, List, Tuple, Set
+from typing import Iterable, List, Set, Tuple
+
 from .models import TrainingExample
 
 REFUSAL_MARKERS = [
