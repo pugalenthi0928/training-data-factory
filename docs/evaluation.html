@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forge Evaluation | Blind Review and Calibration</title>
+  <meta name="description" content="How Forge freezes evaluation assets, blinds human review, checks judge bias, and prevents unsupported model-quality claims.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">F.</a>
+      <div class="nav-links">
+        <a href="index.html">Forge</a>
+        <a href="overview.html">Overview</a>
+        <a href="evaluation.html" class="active">Evaluation</a>
+        <a href="technical.html">Technical</a>
+        <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="mode-bar">
+    <h1>Forge</h1>
+    <div class="mode-bar-right">
+      <div class="tab-group">
+        <a href="demo.html">Demo</a>
+        <a href="index.html">Evidence</a>
+        <a href="overview.html">Overview</a>
+        <a href="evaluation.html" class="active">Evaluation</a>
+        <a href="technical.html">Technical</a>
+      </div>
+      <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero">
+      <h1>Evaluation that can say <em>not yet.</em></h1>
+      <p class="subtitle">
+        Forge separates evaluation from generation, blinds system identity, measures reviewer
+        agreement, reverses judge order, and keeps model-quality claims locked until the declared
+        evidence exists.
+      </p>
+    </section>
+
+    <div class="container wide">
+      <div class="callout">
+        <strong>Current evidence:</strong> the engineering controls pass on an eight-item authored
+        fixture. Genuine human annotations have not been collected, so human calibration and model
+        quality remain unestablished.
+      </div>
+
+      <h2>What is frozen</h2>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Evaluation release</h3>
+          <p>Items, protocol, packets, review sheet, and blinding key are fingerprinted under one deterministic evaluation ID.</p>
+        </div>
+        <div class="card">
+          <h3>Human packet</h3>
+          <p>Reviewers see Candidate A and Candidate B without generator identity or position mappings.</p>
+        </div>
+        <div class="card">
+          <h3>Judge packet</h3>
+          <p>Every comparison appears in primary and reversed order so position consistency is measured directly.</p>
+        </div>
+      </div>
+
+      <h2>Controlled fixture result</h2>
+      <div class="grid-3">
+        <div class="stat">
+          <span class="number">0.754</span>
+          <span class="label">Fixture Krippendorff alpha</span>
+        </div>
+        <div class="stat">
+          <span class="number">0.875</span>
+          <span class="label">Fixture judge agreement</span>
+        </div>
+        <div class="stat">
+          <span class="number">0.875</span>
+          <span class="label">Position consistency</span>
+        </div>
+      </div>
+      <p>
+        Two fixture annotators produced 16 labels over eight items. The report also records Cohen
+        kappa 0.741935, judge macro F1 0.858586, five Forge wins, one baseline win, and two ties.
+        The paired fixture win rate is 0.75 with a 95 percent bootstrap interval from 0.4375 to 1.0.
+        This small controlled set tests the machinery and failure semantics. It is not a performance benchmark.
+      </p>
+
+      <h2>The claim gate</h2>
+      <table>
+        <tr><th>Requirement</th><th>Declared boundary</th><th>Current status</th></tr>
+        <tr><td>Independent evaluation set</td><td>Frozen outside generator context</td><td>Framework ready, real set pending</td></tr>
+        <tr><td>Human coverage</td><td>At least 200 genuine human-reviewed items</td><td>Pending</td></tr>
+        <tr><td>Overlap</td><td>At least 50 multiply reviewed items</td><td>Pending</td></tr>
+        <tr><td>Reviewer agreement</td><td>Nominal alpha at least 0.667</td><td>Pending genuine labels</td></tr>
+        <tr><td>Judge independence</td><td>Different family from the candidate generator</td><td>Enforced in code</td></tr>
+        <tr><td>Judge alignment</td><td>At least 0.7 exact agreement with human consensus</td><td>Pending genuine labels</td></tr>
+        <tr><td>Order robustness</td><td>At least 0.8 primary versus reversed consistency</td><td>Enforced in code</td></tr>
+      </table>
+
+      <h2>Reviewer workflow</h2>
+      <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+        <li>Freeze independently authored comparisons and the annotation protocol.</li>
+        <li>Give reviewers only the generated <code>human_review_sheet.csv</code>.</li>
+        <li>Collect A, B, tie, or both-bad labels with confidence and reason codes.</li>
+        <li>Lock the labels before exposing the blinding key.</li>
+        <li>Run a versioned judge from a different model family over both orders.</li>
+        <li>Publish agreement, slice results, bias checks, intervals, limitations, and failure cases.</li>
+      </ol>
+      <pre><code>make evaluation-fixture
+
+python scripts/prepare_evaluation.py --help
+python scripts/run_pairwise_judge.py --help
+python scripts/analyse_evaluation.py --help</code></pre>
+
+      <h2>Why the report can still fail</h2>
+      <p>
+        A controlled fixture cannot become human evidence by changing a label. A same-family judge
+        cannot support a headline comparison. Incomplete review coverage, weak reviewer agreement,
+        low judge agreement, or sensitivity to response order keeps the report in
+        <code>controlled_or_incomplete</code> status. Judge alignment also does not prove that training
+        improved a downstream model.
+      </p>
+
+      <hr>
+      <p>
+        Read the complete <a href="https://github.com/pugalenthi0928/training-data-factory/blob/main/docs/evaluation/annotation-protocol.md">annotation protocol</a>,
+        inspect the <a href="technical.html">technical controls</a>, or run the
+        <a href="demo.html">browser demo</a>.
+      </p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <span>Forge by Pugalenthi Magendran</span>
+        <span>Claims follow evidence</span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

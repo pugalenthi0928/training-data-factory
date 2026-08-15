@@ -39,8 +39,8 @@ from public evidence:
   pipeline or a hosted processing service.
 - Exact, MinHash LSH, Jaccard, and optional embedding controls are implemented.
   Production embedding thresholds still require corpus-specific human calibration.
-- Model judging has not been calibrated against a human-reviewed reference
-  subset.
+- The judge calibration framework is implemented and exercised on controlled
+  fixture labels. Genuine human review has not yet been collected.
 - Source license, permitted use, structured identifier risk, and record-level
   rejection reasons are release evidence. The privacy detector is not yet a
   complete personal-entity or domain-specific privacy system.
@@ -176,6 +176,9 @@ Implemented evidence:
 
 ### Stage 4: Independent evaluation and human calibration
 
+Status: engineering framework complete. The independent 200-item human
+collection remains the evidence gate.
+
 Deliverables:
 
 - A frozen, independently authored evaluation set with its own release
@@ -198,6 +201,25 @@ Acceptance criteria:
 - No headline result depends on a judge from the same model family used to
   create the targets.
 - The benchmark is fingerprinted, frozen, and absent from generator context.
+
+Implemented evidence:
+
+- Evaluation releases are content-addressed and verify every item, protocol,
+  packet, review sheet, and blinding-key hash.
+- Human packets hide generator identity. Judge packets contain primary and
+  reversed candidate order for a direct position-consistency measurement.
+- The annotation protocol defines A, B, tie, and both-bad labels, reason codes,
+  confidence, pseudonymous reviewers, overlap, and adjudication.
+- The analysis reports nominal Krippendorff alpha, two-rater Cohen kappa,
+  slice-level pairwise outcomes, a bootstrap win-rate interval, judge agreement,
+  macro F1, calibration error, and first-position choice rate.
+- The judge runner records provider, model, model family, prompt version, and
+  prompt hash. Invalid or unstructured output fails instead of receiving a
+  guessed fallback label.
+- Claim gates reject fixture-only labels, incomplete coverage, weak agreement,
+  poor reversed-order consistency, and same-family judges.
+- The eight-item controlled fixture is checked in CI. It validates the machinery
+  only and is explicitly excluded from human or model-quality claims.
 
 ### Stage 5: Hosted product architecture
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "forge-training-data"
-version = "0.11.0"
+version = "0.12.0"
 description = "Source-aware training data generation, quality checks, and evaluation workflows"
 authors = [{ name = "Pugalenthi Magendran" }]
 requires-python = ">=3.11"

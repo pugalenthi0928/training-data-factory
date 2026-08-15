@@ -1029,10 +1029,11 @@ select {
     gap: 0.5rem;
     align-items: flex-start;
   }
-  .mode-bar h1 { display: none; }
-  .mode-bar-right { width: 100%; }
-  .tab-group { width: 100%; }
-  .tab-group a { flex: 1; padding: 5px 4px; font-size: 0.68rem; text-align: center; }
+  .mode-bar h1, .mode-bar-github { display: none; }
+  .mode-bar-right { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .mode-bar-right::-webkit-scrollbar { display: none; }
+  .tab-group { width: max-content; min-width: 100%; }
+  .tab-group a { flex: 1; padding: 5px 9px; font-size: 0.68rem; text-align: center; }
   .stat .number { font-size: 1.5rem; }
   .nav-inner { padding: 0 1rem; }
   .nav-links { gap: 0.75rem; }

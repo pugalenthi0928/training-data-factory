@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test report curation-calibration forge forge-live dashboard clean
+.PHONY: install lint format typecheck test report curation-calibration evaluation-fixture forge forge-live dashboard clean
 
 install:
 	pip install -c constraints-dev.txt -e ".[dev]"
@@ -28,6 +28,26 @@ curation-calibration:
 		--output runs/curation_calibration.json \
 		--min-fuzzy-precision 0.8 \
 		--min-fuzzy-recall 0.5
+
+evaluation-fixture:
+	python scripts/prepare_evaluation.py \
+		--items sample_evaluation/controlled_candidates.jsonl \
+		--protocol docs/evaluation/annotation-protocol.md \
+		--output-dir runs/evaluation_fixture \
+		--author "repository controlled fixture" \
+		--origin "Stage 4 mechanism test" \
+		--independence-status controlled_fixture \
+		--generator-family openai \
+		--seed 42 \
+		--target-items 200 \
+		--minimum-overlap-items 4
+	python scripts/analyse_evaluation.py \
+		--manifest runs/evaluation_fixture/evaluation_manifest.json \
+		--annotations sample_evaluation/controlled_annotations.jsonl \
+		--judge-predictions sample_evaluation/controlled_judge_predictions.jsonl \
+		--output runs/evaluation_fixture/calibration_report.json \
+		--require-fixture-alpha 0.7 \
+		--require-fixture-position-consistency 0.8
 
 forge:
 	python scripts/run_forge.py \
