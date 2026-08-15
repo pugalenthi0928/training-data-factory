@@ -15,7 +15,9 @@
     <div class="nav-inner">
       <a href="index.html" class="nav-logo">F.</a>
       <div class="nav-links">
-        <a href="https://github.com/pugalenthi0928/training-data-factory">Repository</a>
+        <a href="index.html">Forge</a>
+        <a href="overview.html">Overview</a>
+        <a href="technical.html" class="active">Technical</a>
         <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
       </div>
     </div>
@@ -25,11 +27,11 @@
     <h1>Forge</h1>
     <div class="mode-bar-right">
       <div class="tab-group">
-        <a href="demo.html">Demo</a>
         <a href="index.html">Evidence</a>
         <a href="overview.html">Overview</a>
         <a href="technical.html" class="active">Technical</a>
       </div>
+      <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
     </div>
   </div>
 
@@ -74,6 +76,27 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
         uneven, the achieved fraction is recorded explicitly.
       </div>
 
+      <h2>Pipeline identity and resume</h2>
+      <p>
+        The installed <code>forge</code> command, repository wrapper, tests, and future workers share
+        <code>forge.workflow.run_forge</code>. Each stage declares typed configuration, content inputs,
+        expected outputs, model identity, prompt identity, and an implementation version.
+      </p>
+      <p>
+        A cache key is derived from that contract and the current input fingerprints. A cache hit is
+        accepted only after every recorded output is hashed again. Missing or modified output files
+        invalidate the stage. A failed run records the error and resumes from the last verified stage.
+      </p>
+      <pre><code>forge \
+  --source ./sample_docs \
+  --output-dir runs/example \
+  --benchmark-file sample_benchmarks/contamination_smoke_test.jsonl \
+  --dry-run</code></pre>
+      <p>
+        <code>pipeline_events.jsonl</code> records start, completion, failure, and cache-hit events.
+        Model and prompt identities are stored as metadata and hashes. API keys are never event fields.
+      </p>
+
       <h2>Contamination gate</h2>
       <p>
         The contamination command indexes benchmark text into 8-gram and 13-gram sets, then
@@ -114,11 +137,12 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
       <h2>Failure semantics</h2>
       <table>
         <tr><th>Condition</th><th>Behaviour</th></tr>
-        <tr><td>Generation, quality, deduplication, judging, difficulty, or selection fails</td><td>Pipeline exits nonzero</td></tr>
+        <tr><td>Any declared stage fails</td><td>Failure event is written and the pipeline exits nonzero</td></tr>
+        <tr><td>Cached output is missing or modified</td><td>Cache entry is rejected and the stage executes again</td></tr>
         <tr><td>Benchmark missing or empty</td><td>Contamination stage exits nonzero</td></tr>
         <tr><td>Contamination threshold crossed</td><td>Report is written, then pipeline exits nonzero</td></tr>
         <tr><td>Source provenance missing</td><td>Split refuses to run</td></tr>
-        <tr><td>Fine-tuning or benchmark fails</td><td>Live pipeline exits nonzero</td></tr>
+        <tr><td>Release artifact hash disagrees</td><td>Release creation or independent verification fails</td></tr>
       </table>
 
       <h2>Verified development path</h2>
@@ -131,9 +155,10 @@ make typecheck
 make test
 make coverage</code></pre>
       <p>
-        The offline smoke command completes generation, quality scoring, exact-hash deduplication,
-        fake judging, contamination screening, difficulty calibration, and source-safe splitting.
-        It leaves the same config, logs, reports, and manifests expected from a live run.
+        The offline smoke command completes ingest, generation, quality scoring, exact deduplication,
+        fake judging, contamination screening, difficulty calibration, source-safe splitting, and
+        independent release verification. CI runs it twice and requires verified cache hits plus an
+        unchanged release identity on the second run.
       </p>
 
       <h2>What remains before a model result is published</h2>

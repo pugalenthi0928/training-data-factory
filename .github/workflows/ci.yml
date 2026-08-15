@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -c constraints-dev.txt -e ".[dev]"
       - name: Type check
-        run: mypy src/training_data_robo/ --ignore-missing-imports
+        run: mypy src/forge/ src/training_data_robo/ --ignore-missing-imports
 
   test:
     runs-on: ubuntu-latest
@@ -44,7 +44,7 @@ jobs:
       - name: Syntax check
         run: python -m py_compile app.py scripts/*.py
       - name: Run tests with coverage
-        run: pytest --cov=training_data_robo --cov-report=term-missing --cov-fail-under=70
+        run: pytest --cov=forge --cov=training_data_robo --cov-report=term-missing --cov-fail-under=70
 
   release-smoke:
     runs-on: ubuntu-latest
@@ -69,3 +69,16 @@ jobs:
             --dry-run
       - name: Verify release artifacts
         run: python scripts/release_dataset.py --run-dir runs/ci_smoke --verify
+      - name: Prove content cache and stable release identity
+        run: |
+          first_release=$(python scripts/release_dataset.py --run-dir runs/ci_smoke --verify | python -c 'import json,sys; print(json.load(sys.stdin)["release_id"])')
+          python scripts/run_forge.py \
+            --source ./sample_docs \
+            --output-dir runs/ci_smoke \
+            --tasks qa,summary \
+            --max-examples 40 \
+            --benchmark-file sample_benchmarks/contamination_smoke_test.jsonl \
+            --dry-run
+          second_release=$(python scripts/release_dataset.py --run-dir runs/ci_smoke --verify | python -c 'import json,sys; print(json.load(sys.stdin)["release_id"])')
+          test "$first_release" = "$second_release"
+          python -c 'import json; entries=json.load(open("runs/ci_smoke/pipeline_log.json")); assert entries and all(e["execution"] == "cached" for e in entries)'

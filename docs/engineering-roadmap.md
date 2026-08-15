@@ -33,15 +33,10 @@ from public evidence:
   and a no-install browser demo.
 - Historical evidence limitations are disclosed instead of hidden.
 
-### Material weaknesses
+### Remaining weaknesses
 
 - The public demo exercises deterministic controls, not the real Python
   pipeline or a hosted processing service.
-- The end-to-end workflow is still a sequence of subprocess-driven scripts.
-  The library pipeline and the public entry point are not yet one execution
-  model.
-- The mutable registry has no release schema, stable identity, or independent
-  verifier.
 - Exact hashing and lexical n-grams miss fuzzy, semantic, and paraphrased
   duplicates.
 - Model judging has not been calibrated against a human-reviewed reference
@@ -52,8 +47,6 @@ from public evidence:
   portable training backend for CI or hosted demonstration.
 - The dashboard reads local run folders. It is not an operational job system
   with durable state, idempotency, retries, or concurrent workers.
-- The internal package name `training_data_robo` no longer matches the Forge
-  product and weakens repository cohesion.
 
 ## Design principles
 
@@ -92,7 +85,7 @@ changing release semantics.
 
 ### Stage 1: Verifiable dataset releases
 
-Status: in implementation.
+Status: complete.
 
 Deliverables:
 
@@ -117,6 +110,9 @@ Acceptance criteria:
 
 ### Stage 2: One pipeline core
 
+Status: core complete. The future HTTP service will call the same API when the
+hosted architecture is introduced in Stage 5.
+
 Deliverables:
 
 - Replace script-to-script orchestration with typed stage interfaces.
@@ -131,9 +127,11 @@ Deliverables:
 
 Acceptance criteria:
 
-- The CLI, tests, and hosted service call the same pipeline API.
-- Re-running identical inputs produces cache hits and the same release ID.
-- Injected stage failure can be resumed from the last valid artifact.
+- The CLI and tests call `forge.workflow.run_forge`; the future hosted service
+  has one supported API to call.
+- Re-running identical inputs produces verified cache hits and the same release
+  ID.
+- Injected stage failure resumes from the last content-verified artifact.
 
 ### Stage 3: Real curation and governance gates
 
