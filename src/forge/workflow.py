@@ -20,9 +20,12 @@ from .contracts import (
     IngestConfig,
     JudgmentConfig,
     ModelRef,
+    ProfileConfig,
     PromptRef,
     QualityConfig,
+    RecordGovernanceConfig,
     SelectionConfig,
+    SourceGovernanceConfig,
     SplitConfig,
     canonical_sha256,
 )
@@ -34,8 +37,11 @@ from .stages import (
     run_generation,
     run_ingest,
     run_judgment,
+    run_profile,
     run_quality,
+    run_record_governance,
     run_selection,
+    run_source_governance,
     run_split,
 )
 
@@ -48,6 +54,7 @@ def _now() -> str:
 class ForgeConfig:
     sources: tuple[str, ...]
     benchmarks: tuple[str, ...]
+    source_manifest: str | None = None
     tasks: tuple[str, ...] = ("qa", "summary")
     model: str = "gpt-4.1-mini"
     judge_model: str = "gpt-4.1-mini"
@@ -58,6 +65,14 @@ class ForgeConfig:
     select_strategy: str = "quality_weighted"
     test_fraction: float = 0.2
     split_seed: int = 42
+    pii_action: str = "reject"
+    fuzzy_dedupe_threshold: float = 0.8
+    fuzzy_contamination_threshold: float = 0.8
+    semantic_backend: str = "disabled"
+    semantic_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    semantic_revision: str = "main"
+    semantic_dedupe_threshold: float = 0.9
+    semantic_contamination_threshold: float = 0.9
     dry_run: bool = False
     dataset_name: str = "forge-generated-dataset"
     dataset_version: str = "0.1.0"
@@ -80,6 +95,23 @@ class ForgeConfig:
             raise ValueError("test_fraction must be between 0 and 1")
         if self.release_tier not in {"smoke", "candidate"}:
             raise ValueError("release_tier must be 'smoke' or 'candidate'")
+        if self.pii_action not in {"reject", "redact"}:
+            raise ValueError("pii_action must be 'reject' or 'redact'")
+        if self.semantic_backend not in {"disabled", "sentence_transformers", "openai"}:
+            raise ValueError("semantic_backend must be disabled, sentence_transformers, or openai")
+        for field_name in (
+            "fuzzy_dedupe_threshold",
+            "fuzzy_contamination_threshold",
+            "semantic_dedupe_threshold",
+            "semantic_contamination_threshold",
+        ):
+            value = float(getattr(self, field_name))
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"{field_name} must be between zero and one")
+        if self.release_tier == "candidate" and not self.source_manifest:
+            raise ValueError("candidate releases require a source-rights manifest")
+        if self.release_tier == "candidate" and self.semantic_backend == "disabled":
+            raise ValueError("candidate releases require a semantic dedupe and contamination backend")
         for field_name in ("dataset_name", "dataset_version", "dataset_license", "benchmark_origin"):
             if not str(getattr(self, field_name)).strip():
                 raise ValueError(f"{field_name} must not be empty")
@@ -88,6 +120,8 @@ class ForgeConfig:
     def from_paths(cls, *, sources: list[str], benchmarks: list[str], **kwargs: Any) -> "ForgeConfig":
         resolved_sources = tuple(str(Path(value).expanduser().resolve()) for value in sources)
         resolved_benchmarks = tuple(str(Path(value).expanduser().resolve()) for value in benchmarks)
+        if kwargs.get("source_manifest"):
+            kwargs["source_manifest"] = str(Path(str(kwargs["source_manifest"])).expanduser().resolve())
         return cls(sources=resolved_sources, benchmarks=resolved_benchmarks, **kwargs)
 
 
@@ -144,6 +178,18 @@ def build_pipeline(run_dir: Path, config: ForgeConfig, *, cache_enabled: bool = 
         name="deterministic-dummy-judge" if config.dry_run else config.judge_model,
         parameters={"rubric": "forge-default-v1", "max_concurrent": 5},
     )
+    semantic_models = (
+        (
+            ModelRef(
+                provider=config.semantic_backend,
+                name=config.semantic_model,
+                revision=config.semantic_revision,
+                parameters={"purpose": "similarity_control"},
+            ),
+        )
+        if config.semantic_backend != "disabled"
+        else ()
+    )
 
     pipeline.add(
         StageDefinition(
@@ -160,8 +206,41 @@ def build_pipeline(run_dir: Path, config: ForgeConfig, *, cache_enabled: bool = 
     )
     pipeline.add(
         StageDefinition(
-            name="generate",
+            name="source_governance",
             version="1",
+            config=SourceGovernanceConfig(
+                source_manifest=config.source_manifest,
+                pii_action=config.pii_action,
+                allow_unknown_rights=config.release_tier == "smoke",
+            ),
+            runner=run_source_governance,
+            inputs=(
+                _json_binding("documents", "documents.jsonl"),
+                *(
+                    (
+                        ArtifactBinding(
+                            role="source_rights_manifest",
+                            path=config.source_manifest,
+                            scope="external",
+                            media_type="application/json",
+                        ),
+                    )
+                    if config.source_manifest
+                    else ()
+                ),
+            ),
+            outputs=(
+                _json_binding("governed_documents", "governed_documents.jsonl"),
+                _json_binding("rejected_documents", "rejected_documents.jsonl"),
+                _json_binding("source_governance_report", "source_governance_report.json"),
+            ),
+            depends_on=("ingest",),
+        )
+    )
+    pipeline.add(
+        StageDefinition(
+            name="generate",
+            version="2",
             config=GenerationConfig(
                 tasks=config.tasks,
                 model=config.model,
@@ -171,9 +250,9 @@ def build_pipeline(run_dir: Path, config: ForgeConfig, *, cache_enabled: bool = 
                 dry_run=config.dry_run,
             ),
             runner=run_generation,
-            inputs=(_json_binding("documents", "documents.jsonl"),),
+            inputs=(_json_binding("governed_documents", "governed_documents.jsonl"),),
             outputs=(_json_binding("raw_examples", "raw_dataset.jsonl"),),
-            depends_on=("ingest",),
+            depends_on=("source_governance",),
             models=generation_models,
             prompts=generation_prompts,
         )
@@ -191,13 +270,39 @@ def build_pipeline(run_dir: Path, config: ForgeConfig, *, cache_enabled: bool = 
     )
     pipeline.add(
         StageDefinition(
-            name="dedupe",
+            name="record_governance",
             version="1",
-            config=DedupeConfig(),
-            runner=run_dedupe,
+            config=RecordGovernanceConfig(pii_action=config.pii_action),
+            runner=run_record_governance,
             inputs=(_json_binding("scored_examples", "quality.jsonl"),),
-            outputs=(_json_binding("unique_examples", "deduped.jsonl"),),
+            outputs=(
+                _json_binding("governed_records", "governed_records.jsonl"),
+                _json_binding("rejected_records", "rejected_records.jsonl"),
+                _json_binding("record_governance_report", "record_governance_report.json"),
+            ),
             depends_on=("quality",),
+        )
+    )
+    pipeline.add(
+        StageDefinition(
+            name="dedupe",
+            version="2",
+            config=DedupeConfig(
+                fuzzy_threshold=config.fuzzy_dedupe_threshold,
+                semantic_backend=config.semantic_backend,
+                semantic_model=config.semantic_model,
+                semantic_revision=config.semantic_revision,
+                semantic_threshold=config.semantic_dedupe_threshold,
+            ),
+            runner=run_dedupe,
+            inputs=(_json_binding("governed_records", "governed_records.jsonl"),),
+            outputs=(
+                _json_binding("unique_examples", "deduped.jsonl"),
+                _json_binding("duplicate_examples", "dedupe_rejections.jsonl"),
+                _json_binding("dedupe_report", "dedupe_report.json"),
+            ),
+            depends_on=("record_governance",),
+            models=semantic_models,
         )
     )
     pipeline.add(
@@ -225,12 +330,20 @@ def build_pipeline(run_dir: Path, config: ForgeConfig, *, cache_enabled: bool = 
     pipeline.add(
         StageDefinition(
             name="contamination",
-            version="1",
-            config=ContaminationConfig(benchmark_paths=config.benchmarks),
+            version="2",
+            config=ContaminationConfig(
+                benchmark_paths=config.benchmarks,
+                fuzzy_threshold=config.fuzzy_contamination_threshold,
+                semantic_backend=config.semantic_backend,
+                semantic_model=config.semantic_model,
+                semantic_revision=config.semantic_revision,
+                semantic_threshold=config.semantic_contamination_threshold,
+            ),
             runner=run_contamination,
             inputs=tuple(contamination_inputs),
             outputs=(_json_binding("contamination_report", "contamination_report.json"),),
             depends_on=("judge",),
+            models=semantic_models,
         )
     )
     pipeline.add(
@@ -270,16 +383,58 @@ def build_pipeline(run_dir: Path, config: ForgeConfig, *, cache_enabled: bool = 
             depends_on=("select",),
         )
     )
+    profile_inputs = (
+        _json_binding("train_split", "train.jsonl"),
+        _json_binding("test_split", "test.jsonl"),
+        _json_binding("source_governance_report", "source_governance_report.json"),
+        _json_binding("record_governance_report", "record_governance_report.json"),
+        _json_binding("dedupe_report", "dedupe_report.json"),
+        _json_binding("contamination_report", "contamination_report.json"),
+        _json_binding("rejected_documents", "rejected_documents.jsonl"),
+        _json_binding("rejected_records", "rejected_records.jsonl"),
+        _json_binding("dedupe_rejections", "dedupe_rejections.jsonl"),
+    )
+    pipeline.add(
+        StageDefinition(
+            name="profile",
+            version="1",
+            config=ProfileConfig(),
+            runner=run_profile,
+            inputs=profile_inputs,
+            outputs=(_json_binding("dataset_profile", "dataset_profile.json"),),
+            depends_on=("split",),
+        )
+    )
     return pipeline
 
 
 def _write_run_config(run_dir: Path, config: ForgeConfig, started_at: str) -> None:
     payload = asdict(config)
-    payload["source"] = list(config.sources)
-    payload["benchmark_file"] = list(config.benchmarks)
+    public_sources = [Path(value).name for value in config.sources]
+    public_benchmarks = [Path(value).name for value in config.benchmarks]
+    payload["sources"] = public_sources
+    payload["benchmarks"] = public_benchmarks
+    payload["source"] = public_sources
+    payload["benchmark_file"] = public_benchmarks
+    payload["source_manifest"] = Path(config.source_manifest).name if config.source_manifest else None
     payload["started_at"] = started_at
     payload["pipeline_api"] = "forge.workflow/v1"
     run_dir.mkdir(parents=True, exist_ok=True)
+    runtime_dir = run_dir / ".forge"
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    (runtime_dir / "runtime_inputs.json").write_text(
+        json.dumps(
+            {
+                "sources": list(config.sources),
+                "benchmarks": list(config.benchmarks),
+                "source_manifest": config.source_manifest,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (run_dir / "config.json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False, default=str) + "\n",
         encoding="utf-8",

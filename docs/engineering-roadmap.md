@@ -37,12 +37,13 @@ from public evidence:
 
 - The public demo exercises deterministic controls, not the real Python
   pipeline or a hosted processing service.
-- Exact hashing and lexical n-grams miss fuzzy, semantic, and paraphrased
-  duplicates.
+- Exact, MinHash LSH, Jaccard, and optional embedding controls are implemented.
+  Production embedding thresholds still require corpus-specific human calibration.
 - Model judging has not been calibrated against a human-reviewed reference
   subset.
-- Source license, permitted use, PII risk, and record-level rejection reasons
-  are not enforced as release gates.
+- Source license, permitted use, structured identifier risk, and record-level
+  rejection reasons are release evidence. The privacy detector is not yet a
+  complete personal-entity or domain-specific privacy system.
 - The MLX training path is machine-specific, and the repository has no small
   portable training backend for CI or hosted demonstration.
 - The dashboard reads local run folders. It is not an operational job system
@@ -135,6 +136,9 @@ Acceptance criteria:
 
 ### Stage 3: Real curation and governance gates
 
+Status: core complete. Corpus-specific semantic and privacy calibration remains
+part of each candidate release rather than a universal project claim.
+
 Deliverables:
 
 - Exact document and record deduplication.
@@ -154,6 +158,21 @@ Acceptance criteria:
 - Paraphrased benchmark examples are detected in a documented test fixture.
 - Every rejected record has a machine-readable reason.
 - A release cannot pass with unknown source usage rights in candidate mode.
+
+Implemented evidence:
+
+- Document content dedupe runs inside source governance.
+- Record dedupe combines normalised exact matching, deterministic MinHash LSH,
+  verified shingle Jaccard, and an optional embedding adapter.
+- Candidate workflow configuration rejects a disabled semantic backend.
+- Benchmark screening combines lexical 8-grams, shingle Jaccard, and the same
+  recorded embedding boundary.
+- Source and record quarantine files preserve audit decisions and reason codes.
+- Candidate releases fail on unknown or disallowed source usage rights.
+- Dataset profiles summarise sources, tasks, lengths, quality, difficulty,
+  rejections, and artifact hashes.
+- A labelled 12-pair control fixture reports precision, recall, F1, and a
+  multi-seed bootstrap interval. Its small size is disclosed.
 
 ### Stage 4: Independent evaluation and human calibration
 
@@ -247,6 +266,13 @@ model quality.
   composable local and distributed text-processing pipelines.
 - [Rethinking Benchmark and Contamination for Language Models](https://arxiv.org/abs/2311.04850)
   shows why string matching alone misses rephrased contamination.
+- [Deduplicating Training Data Makes Language Models Better](https://arxiv.org/abs/2107.06499)
+  links near-duplicate removal to lower memorisation and cleaner evaluation.
+- [SimCSE](https://aclanthology.org/2021.emnlp-main.552/) demonstrates why
+  learned sentence representations can support semantic similarity controls.
+- [Microsoft Presidio](https://github.com/microsoft/presidio) documents a
+  layered privacy design using patterns, checksums, NER, and custom recognisers,
+  while explicitly warning that automatic PII detection is not complete.
 - [Judging the Judges](https://arxiv.org/abs/2406.12624) shows why model judges
   need human agreement analysis and careful bias controls.
 - [Google Data Cards Playbook](https://sites.research.google/datacardsplaybook/)

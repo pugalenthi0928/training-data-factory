@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "forge-training-data"
-version = "0.10.0"
+version = "0.11.0"
 description = "Source-aware training data generation, quality checks, and evaluation workflows"
 authors = [{ name = "Pugalenthi Magendran" }]
 requires-python = ">=3.11"
@@ -31,6 +31,9 @@ mlx = [
     "mlx>=0.12.0",
     "mlx-lm>=0.12.0",
     "transformers>=4.35.0",
+]
+semantic = [
+    "sentence-transformers>=5.0.0,<6.0.0",
 ]
 
 [tool.setuptools]

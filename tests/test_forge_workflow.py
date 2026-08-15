@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from forge import ForgeConfig, run_forge
 from training_data_robo.releases import verify_release
 
@@ -43,10 +45,21 @@ def test_real_workflow_resumes_with_same_release_identity(tmp_path: Path) -> Non
 
     assert first.release_id == second.release_id
     assert first.cache_hits == 0
-    assert second.cache_hits == len(second.stage_results) == 9
+    assert second.cache_hits == len(second.stage_results) == 12
     assert verify_release(run_dir / "release_manifest.json")["verified"] is True
     assert (run_dir / "pipeline_events.jsonl").is_file()
     assert (run_dir / ".forge" / "state.json").is_file()
+    public_config = (run_dir / "config.json").read_text(encoding="utf-8")
+    assert str(tmp_path) not in public_config
+    public_events = (run_dir / "pipeline_events.jsonl").read_text(encoding="utf-8")
+    assert str(tmp_path) not in public_events
+    public_release = (run_dir / "release_manifest.json").read_text(encoding="utf-8")
+    assert str(tmp_path) not in public_release
+    profile = json.loads((run_dir / "dataset_profile.json").read_text(encoding="utf-8"))
+    assert profile["schema_version"] == "forge.dataset-profile/v1"
+    assert profile["curation"]["source_governance"]["status"] == "passed"
+    train_row = json.loads((run_dir / "train.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert train_row["forge_audit"]["schema_version"] == "forge.record-audit/v1"
     pipeline_log = json.loads((run_dir / "pipeline_log.json").read_text(encoding="utf-8"))
     assert all(entry["status"] == "ok" for entry in pipeline_log)
     assert all(entry["execution"] == "cached" for entry in pipeline_log)
@@ -66,3 +79,27 @@ def test_workflow_repairs_tampered_intermediate_artifact(tmp_path: Path) -> None
     assert statuses["quality"] == "ok"
     assert repaired.release_id == initial.release_id
     assert verify_release(run_dir / "release_manifest.json")["verified"] is True
+
+
+def test_candidate_configuration_requires_rights_and_semantic_controls(tmp_path: Path) -> None:
+    config = _fixture_config(tmp_path)
+    candidate = ForgeConfig(
+        **{
+            **config.__dict__,
+            "dry_run": False,
+            "release_tier": "candidate",
+            "dataset_license": "MIT",
+            "benchmark_origin": "independent fixture",
+        }
+    )
+    with pytest.raises(ValueError, match="source-rights manifest"):
+        candidate.validate()
+
+    with_rights = ForgeConfig(
+        **{
+            **candidate.__dict__,
+            "source_manifest": str(tmp_path / "rights.json"),
+        }
+    )
+    with pytest.raises(ValueError, match="semantic dedupe"):
+        with_rights.validate()

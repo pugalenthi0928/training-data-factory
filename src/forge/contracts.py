@@ -157,6 +157,18 @@ class IngestConfig:
 
 
 @dataclass(frozen=True)
+class SourceGovernanceConfig:
+    input_path: str = "documents.jsonl"
+    output_path: str = "governed_documents.jsonl"
+    rejected_path: str = "rejected_documents.jsonl"
+    report_path: str = "source_governance_report.json"
+    source_manifest: str | None = None
+    required_use: str = "training"
+    pii_action: str = "reject"
+    allow_unknown_rights: bool = True
+
+
+@dataclass(frozen=True)
 class GenerationConfig:
     tasks: tuple[str, ...]
     model: str
@@ -164,6 +176,7 @@ class GenerationConfig:
     max_chars: int
     overlap: int
     dry_run: bool
+    input_path: str = "governed_documents.jsonl"
 
 
 @dataclass(frozen=True)
@@ -173,11 +186,31 @@ class QualityConfig:
 
 
 @dataclass(frozen=True)
-class DedupeConfig:
+class RecordGovernanceConfig:
     input_path: str = "quality.jsonl"
+    output_path: str = "governed_records.jsonl"
+    rejected_path: str = "rejected_records.jsonl"
+    report_path: str = "record_governance_report.json"
+    pii_action: str = "reject"
+    text_fields: tuple[str, ...] = ("input_text", "output_text")
+
+
+@dataclass(frozen=True)
+class DedupeConfig:
+    input_path: str = "governed_records.jsonl"
     output_path: str = "deduped.jsonl"
-    text_field: str = "output_text"
-    method: str = "exact_bow"
+    rejected_path: str = "dedupe_rejections.jsonl"
+    report_path: str = "dedupe_report.json"
+    text_fields: tuple[str, ...] = ("input_text", "output_text")
+    shingle_size: int = 3
+    minhash_permutations: int = 64
+    lsh_bands: int = 32
+    fuzzy_threshold: float = 0.8
+    semantic_backend: str = "disabled"
+    semantic_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    semantic_revision: str = "main"
+    semantic_threshold: float = 0.9
+    semantic_max_records: int = 5000
 
 
 @dataclass(frozen=True)
@@ -195,6 +228,13 @@ class ContaminationConfig:
     benchmark_paths: tuple[str, ...] = ()
     output_path: str = "contamination_report.json"
     text_fields: tuple[str, ...] = ("output_text", "input_text")
+    shingle_size: int = 3
+    fuzzy_threshold: float = 0.8
+    semantic_backend: str = "disabled"
+    semantic_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    semantic_revision: str = "main"
+    semantic_threshold: float = 0.9
+    semantic_max_comparisons: int = 250_000
     fail_on_contamination: bool = True
 
 
@@ -222,6 +262,20 @@ class SplitConfig:
     source_field: str = "document_id"
     stratify_field: str = "task_name"
     seed: int = 42
+
+
+@dataclass(frozen=True)
+class ProfileConfig:
+    train_path: str = "train.jsonl"
+    test_path: str = "test.jsonl"
+    source_governance_path: str = "source_governance_report.json"
+    record_governance_path: str = "record_governance_report.json"
+    dedupe_report_path: str = "dedupe_report.json"
+    contamination_path: str = "contamination_report.json"
+    rejected_sources_path: str = "rejected_documents.jsonl"
+    rejected_records_path: str = "rejected_records.jsonl"
+    dedupe_rejections_path: str = "dedupe_rejections.jsonl"
+    output_path: str = "dataset_profile.json"
 
 
 @dataclass(frozen=True)

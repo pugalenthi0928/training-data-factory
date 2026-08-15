@@ -15,7 +15,9 @@
     <div class="nav-inner">
       <a href="index.html" class="nav-logo">F.</a>
       <div class="nav-links">
-        <a href="https://github.com/pugalenthi0928/training-data-factory">Repository</a>
+        <a href="index.html">Forge</a>
+        <a href="overview.html" class="active">Overview</a>
+        <a href="technical.html">Technical</a>
         <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
       </div>
     </div>
@@ -30,6 +32,7 @@
         <a href="overview.html" class="active">Overview</a>
         <a href="technical.html">Technical</a>
       </div>
+      <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
     </div>
   </div>
 
@@ -52,8 +55,8 @@
       </p>
       <p>
         Forge treats those questions as pipeline requirements. It creates training examples,
-        but the repository is organised around traceability and failure conditions rather than
-        a single attractive metric.
+        but the repository is organised around traceability, usage rights, privacy decisions,
+        duplicate controls, and failure conditions rather than a single attractive metric.
       </p>
 
       <h2>The workflow</h2>
@@ -63,24 +66,24 @@
           <p>Each document and chunk receives a deterministic content-derived identifier before examples are generated.</p>
         </div>
         <div class="card">
-          <h3>2. Generate and inspect</h3>
-          <p>Task templates produce candidate examples. Heuristics, deduplication, rubric scores, and difficulty tags add inspectable signals.</p>
+          <h3>2. Establish permitted use</h3>
+          <p>Candidate builds require a source policy. Unknown rights or disallowed training use prevent release.</p>
         </div>
         <div class="card">
-          <h3>3. Check the benchmark boundary</h3>
-          <p>Generated input and output text are compared with benchmark text. A live pipeline run cannot omit this stage.</p>
+          <h3>3. Generate and curate</h3>
+          <p>Schema, structured privacy, exact, fuzzy, semantic, rubric, and difficulty controls add inspectable decisions.</p>
         </div>
         <div class="card">
-          <h3>4. Split whole sources</h3>
-          <p>Examples from one source document stay together. The algorithm selects the whole-source subset closest to the requested row fraction.</p>
+          <h3>4. Check the benchmark boundary</h3>
+          <p>Lexical, fuzzy, and candidate semantic controls compare generated records with independent benchmark text.</p>
         </div>
         <div class="card">
-          <h3>5. Train and compare</h3>
-          <p>The current local path uses MLX LoRA. Base and adapted models are scored on paired examples.</p>
+          <h3>5. Split whole sources</h3>
+          <p>Examples from one source document stay together. The algorithm records the achieved whole-source fraction.</p>
         </div>
         <div class="card">
-          <h3>6. Preserve the evidence</h3>
-          <p>Configuration, step logs, hashes, overlap checks, metrics, interval estimates, and seeds stay with the run.</p>
+          <h3>6. Profile and release</h3>
+          <p>Configuration, audit decisions, quarantine files, profile slices, hashes, overlap checks, and gates stay with the release.</p>
         </div>
       </div>
 
@@ -89,7 +92,10 @@
         <tr><th>Artifact</th><th>What it supports</th><th>What it does not support</th></tr>
         <tr><td>Smoke run</td><td>The pipeline can execute without paid APIs</td><td>Model quality or production readiness</td></tr>
         <tr><td>Split manifest</td><td>No shared source or chunk identifiers</td><td>Semantic independence between related documents</td></tr>
-        <tr><td>N-gram screen</td><td>Detection of verbatim phrase overlap</td><td>Reliable detection of paraphrased leakage</td></tr>
+        <tr><td>Source governance</td><td>Declared license and permitted use are present</td><td>Independent legal verification of ownership</td></tr>
+        <tr><td>Structured privacy scan</td><td>Configured patterns and checksums were applied</td><td>Detection of every personal or contextual identifier</td></tr>
+        <tr><td>MinHash and Jaccard</td><td>Measured exact and near-duplicate control behaviour</td><td>Semantic equivalence between all records</td></tr>
+        <tr><td>Embedding screen</td><td>Similarity under one recorded model and threshold</td><td>Infallible paraphrase or contamination detection</td></tr>
         <tr><td>Model judge</td><td>A repeatable rubric-based signal</td><td>A replacement for human assessment</td></tr>
         <tr><td>Paired statistics</td><td>Uncertainty on one evaluation set</td><td>General capability or causal proof</td></tr>
       </table>
@@ -104,7 +110,7 @@
       </p>
 
       <div class="callout">
-        <strong>Release boundary:</strong> the next credible model result must use an independently
+        <strong>Next boundary:</strong> the next credible model result must use an independently
         authored evaluation set, a documented human review protocol, and either multiple training
         seeds or an equivalent uncertainty analysis.
       </div>

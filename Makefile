@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test report forge forge-live dashboard clean
+.PHONY: install lint format typecheck test report curation-calibration forge forge-live dashboard clean
 
 install:
 	pip install -c constraints-dev.txt -e ".[dev]"
@@ -22,6 +22,13 @@ coverage:
 report:
 	python scripts/plot_runs.py
 
+curation-calibration:
+	python scripts/evaluate_curation.py \
+		--fixture sample_benchmarks/curation_calibration_pairs.jsonl \
+		--output runs/curation_calibration.json \
+		--min-fuzzy-precision 0.8 \
+		--min-fuzzy-recall 0.5
+
 forge:
 	python scripts/run_forge.py \
 		--source ./sample_docs \
@@ -38,6 +45,10 @@ forge-live:
 		--model gpt-4.1-mini \
 		--max-examples 200 \
 		--benchmark-file "$${FORGE_BENCHMARK_FILE}" \
+		--source-manifest "$${FORGE_SOURCE_MANIFEST}" \
+		--semantic-backend openai \
+		--semantic-model text-embedding-3-small \
+		--semantic-revision provider-managed \
 		--skip-finetune
 
 dashboard:

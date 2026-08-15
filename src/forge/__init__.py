@@ -15,16 +15,19 @@ from .contracts import (
     IngestConfig,
     JudgmentConfig,
     ModelRef,
+    ProfileConfig,
     PromptRef,
     QualityConfig,
+    RecordGovernanceConfig,
     SelectionConfig,
+    SourceGovernanceConfig,
     SplitConfig,
     TrainingConfig,
 )
 from .pipeline import Pipeline, StageContext, StageDefinition, StageExecutionError, StageResult
 from .workflow import ForgeConfig, ForgeRun, build_pipeline, run_forge
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 __all__ = [
     "ArtifactBinding",
@@ -41,8 +44,11 @@ __all__ = [
     "ModelRef",
     "Pipeline",
     "PromptRef",
+    "ProfileConfig",
     "QualityConfig",
+    "RecordGovernanceConfig",
     "SelectionConfig",
+    "SourceGovernanceConfig",
     "SplitConfig",
     "StageContext",
     "StageDefinition",
