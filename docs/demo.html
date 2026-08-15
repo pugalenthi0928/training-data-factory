@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forge Browser Demo | Pugalenthi Magendran</title>
+  <meta name="description" content="Run Forge provenance, contamination and source-safe split controls directly in the browser with no installation or API key.">
+  <meta property="og:title" content="Forge Browser Demo">
+  <meta property="og:description" content="A one-click, inspectable smoke run for Forge training data controls.">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">F.</a>
+      <div class="nav-links">
+        <a href="https://github.com/pugalenthi0928/training-data-factory">Repository</a>
+        <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="mode-bar">
+    <h1>Forge</h1>
+    <div class="mode-bar-right">
+      <div class="tab-group">
+        <a href="demo.html" class="active">Demo</a>
+        <a href="index.html">Evidence</a>
+        <a href="overview.html">Overview</a>
+        <a href="technical.html">Technical</a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero demo-hero">
+      <span class="eyebrow">Runs locally in your browser</span>
+      <h1>See the controls <em>work.</em></h1>
+      <p class="subtitle">
+        Choose a clean or contaminated boundary, then run Forge without installing anything.
+        Source text stays in this tab and no API key is required.
+      </p>
+      <div class="demo-disclosure">
+        This is a deterministic smoke demo of provenance, contamination and splitting controls.
+        It does not call an LLM, fine-tune a model or claim model quality.
+      </div>
+    </section>
+
+    <div class="container demo-container">
+      <div class="demo-toolbar">
+        <label for="scenario">
+          Boundary scenario
+          <select id="scenario">
+            <option value="clean">Clean benchmark</option>
+            <option value="contaminated">Deliberate contamination</option>
+          </select>
+        </label>
+        <div class="demo-actions">
+          <button type="button" id="reset-demo" class="button secondary">Reset</button>
+          <button type="button" id="run-demo" class="button primary">Run browser demo</button>
+        </div>
+      </div>
+
+      <div class="demo-shell">
+        <section class="demo-inputs" aria-labelledby="input-heading">
+          <div class="section-kicker">01</div>
+          <h2 id="input-heading">Inputs</h2>
+          <p>Edit the sources if you want. The demo needs at least two documents.</p>
+
+          <label class="source-field">
+            <span>provenance.md</span>
+            <textarea data-source data-name="provenance.md" rows="5">A trustworthy training data pipeline maintains stable source identifiers before examples are generated. Content-derived document and chunk identifiers make repeated runs comparable. Moving a file should not change its identity when the underlying content remains the same.</textarea>
+          </label>
+
+          <label class="source-field">
+            <span>contamination.md</span>
+            <textarea data-source data-name="contamination.md" rows="5">Evaluation material must remain outside the training boundary. Forge screens generated inputs and outputs against a supplied benchmark before a split is written. A flagged contamination result stops the live pipeline instead of becoming a warning that can be ignored.</textarea>
+          </label>
+
+          <label class="source-field">
+            <span>splitting.md</span>
+            <textarea data-source data-name="splitting.md" rows="5">Examples from a complete source document belong in one partition. Grouping by document identity prevents related chunks from crossing between train and test. The split manifest records requested and achieved fractions, overlap checks, seeds and artifact hashes.</textarea>
+          </label>
+
+          <label class="source-field benchmark-field">
+            <span>independent_benchmark.txt</span>
+            <textarea id="benchmark" rows="5"></textarea>
+          </label>
+        </section>
+
+        <section class="demo-run" aria-labelledby="run-heading">
+          <div class="section-kicker">02</div>
+          <h2 id="run-heading">Run</h2>
+          <p>Each stage changes only after the preceding integrity condition passes.</p>
+
+          <ol class="stage-list">
+            <li data-stage="1" data-state="waiting">
+              <span class="stage-number">1</span>
+              <span><strong>Normalize and hash</strong><small>Stable SHA-256 document and chunk IDs</small></span>
+              <span class="stage-status">Waiting</span>
+            </li>
+            <li data-stage="2" data-state="waiting">
+              <span class="stage-number">2</span>
+              <span><strong>Build smoke examples</strong><small>Deterministic summary and QA records</small></span>
+              <span class="stage-status">Waiting</span>
+            </li>
+            <li data-stage="3" data-state="waiting">
+              <span class="stage-number">3</span>
+              <span><strong>Screen contamination</strong><small>Eight-token benchmark overlap gate</small></span>
+              <span class="stage-status">Waiting</span>
+            </li>
+            <li data-stage="4" data-state="waiting">
+              <span class="stage-number">4</span>
+              <span><strong>Split whole sources</strong><small>Document and chunk overlap must equal zero</small></span>
+              <span class="stage-status">Waiting</span>
+            </li>
+            <li data-stage="5" data-state="waiting">
+              <span class="stage-number">5</span>
+              <span><strong>Write evidence</strong><small>Inspectable reports and artifact hashes</small></span>
+              <span class="stage-status">Waiting</span>
+            </li>
+          </ol>
+
+          <div id="run-error" class="run-error" role="alert" hidden></div>
+
+          <div id="result-panel" class="result-panel" hidden>
+            <div id="integrity-gate" class="integrity-gate"></div>
+            <div class="result-metrics">
+              <div><strong data-metric="sources">0</strong><span>Sources</span></div>
+              <div><strong data-metric="examples">0</strong><span>Examples</span></div>
+              <div><strong data-metric="split">0 / 0</strong><span>Train / test</span></div>
+              <div><strong data-metric="overlap">0</strong><span>Source overlap</span></div>
+            </div>
+
+            <div class="artifact-header">
+              <div>
+                <span class="section-kicker">03</span>
+                <h3>Evidence artifacts</h3>
+              </div>
+              <div class="artifact-actions">
+                <button type="button" id="copy-artifact" class="text-button" disabled>Copy JSON</button>
+                <button type="button" id="download-artifact" class="text-button" disabled>Download</button>
+              </div>
+            </div>
+            <div id="artifact-tabs" class="artifact-tabs"></div>
+            <pre class="artifact-code"><code id="artifact-output"></code></pre>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <span>Forge by Pugalenthi Magendran</span>
+        <span>Browser demo, full evidence</span>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="demo.mjs"></script>
+</body>
+</html>
