@@ -24,10 +24,19 @@ from .contracts import (
     SplitConfig,
     TrainingConfig,
 )
+from .evaluation import (
+    EvaluationValidationError,
+    analyse_evaluation,
+    cohen_kappa,
+    freeze_evaluation_set,
+    krippendorff_alpha_nominal,
+    verify_evaluation_release,
+)
+from .pairwise_judge import PAIRWISE_JUDGE_PROMPT_SHA256, PAIRWISE_JUDGE_PROMPT_VERSION
 from .pipeline import Pipeline, StageContext, StageDefinition, StageExecutionError, StageResult
 from .workflow import ForgeConfig, ForgeRun, build_pipeline, run_forge
 
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 __all__ = [
     "ArtifactBinding",
@@ -36,12 +45,15 @@ __all__ = [
     "DedupeConfig",
     "DifficultyConfig",
     "EvaluationConfig",
+    "EvaluationValidationError",
     "ForgeConfig",
     "ForgeRun",
     "GenerationConfig",
     "IngestConfig",
     "JudgmentConfig",
     "ModelRef",
+    "PAIRWISE_JUDGE_PROMPT_SHA256",
+    "PAIRWISE_JUDGE_PROMPT_VERSION",
     "Pipeline",
     "PromptRef",
     "ProfileConfig",
@@ -55,6 +67,11 @@ __all__ = [
     "StageExecutionError",
     "StageResult",
     "TrainingConfig",
+    "analyse_evaluation",
     "build_pipeline",
+    "cohen_kappa",
+    "freeze_evaluation_set",
+    "krippendorff_alpha_nominal",
     "run_forge",
+    "verify_evaluation_release",
 ]

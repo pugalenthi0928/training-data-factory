@@ -18,7 +18,7 @@ Forge is in a technical hardening phase. Verifiable releases, one typed pipeline
 
 Historical model results are not presented as independent evidence. The earlier run used references derived from the same generation process, and the same model family was used for generation and judging. Those artifacts are retained for traceability, not as a headline performance claim.
 
-The next release gate is Stage 4: an independently authored evaluation set plus a human-reviewed scoring subset.
+Stage 4 evaluation infrastructure is implemented. Forge can freeze an independently authored set, create blinded human and reversed-order judge packets, measure reviewer agreement, compare a versioned judge with human consensus, and block unsupported claims. The repository fixture proves those controls execute. Genuine human annotations on the 200-item target have not yet been collected.
 
 ## Why this repository exists
 
@@ -171,13 +171,27 @@ The benchmark harness compares paired predictions with the same references and r
 
 These statistics quantify uncertainty in a particular evaluation set. They do not establish general model quality, remove judge bias, or substitute for an independently constructed benchmark.
 
+## Independent evaluation and human calibration
+
+```bash
+make evaluation-fixture
+```
+
+This controlled path freezes eight candidate comparisons, writes a content-addressed evaluation manifest, creates a blinded human sheet, runs the analysis against fixture annotations, and checks reversed-order judge consistency in CI. It reports fixture Krippendorff alpha `0.754098`, fixture Cohen kappa `0.741935`, judge agreement `0.875`, judge macro F1 `0.858586`, and position consistency `0.875`. These are mechanism-test values from authored fixture labels. They are not genuine human evidence and do not establish model quality.
+
+For a real collection, freeze independently authored items with `scripts/prepare_evaluation.py`, give reviewers only `human_review_sheet.csv`, run a different-family judge with `scripts/run_pairwise_judge.py`, and analyse the immutable annotations with `scripts/analyse_evaluation.py`. The gate requires at least 200 genuinely human-reviewed items, 50 overlapping reviews, nominal Krippendorff alpha of at least `0.667`, a different-family judge, at least `0.7` human agreement, and at least `0.8` reversed-order consistency. The full protocol is in [`docs/evaluation/annotation-protocol.md`](docs/evaluation/annotation-protocol.md).
+
+The evaluation manifest fingerprints every packet, sheet, protocol, and blinding key. Human packets never expose generator identity. Judge packets include primary and swapped presentations so first-position bias is measurable. Reports omit reviewer identifiers and keep model-quality status unestablished.
+
 ## Repository layout
 
 ```text
 src/forge/
   calibration.py     Labelled control evaluation and bootstrap intervals
   contracts.py       Typed stage, artifact, model, prompt, training, and evaluation contracts
+  evaluation.py      Frozen blind evaluation releases, agreement, and claim gates
   governance.py      Source rights, schema decisions, and structured PII controls
+  pairwise_judge.py  Versioned strict-JSON judge and reversed-order runner
   pipeline.py        Content-keyed execution, event evidence, verified cache, and resume
   profiling.py       Source, task, quality, difficulty, and rejection profile
   similarity.py      Exact, MinHash LSH, Jaccard, and embedding adapters
@@ -200,6 +214,9 @@ scripts/
   finetune_mlx.py         Local LoRA fine-tuning
   release_dataset.py      Release creation and independent verification
   evaluate_curation.py    Labelled dedupe calibration report
+  prepare_evaluation.py   Frozen evaluation release and blinded packet builder
+  analyse_evaluation.py   Human agreement, pairwise result, and judge calibration report
+  run_pairwise_judge.py   Versioned model judge over primary and swapped presentations
 
 tests/                    Unit, property, provenance, and integrity tests
 sample_docs/              Public smoke-test source documents
@@ -217,12 +234,12 @@ make test
 make coverage
 ```
 
-CI runs linting, format checks, type checking, syntax compilation, tests, and a coverage threshold on every push and pull request.
+CI runs linting, format checks, type checking, syntax compilation, tests, a coverage threshold, curation calibration, evaluation-control calibration, and a repeatable release smoke test on every push and pull request.
 
 ## Known limitations
 
 - Smoke releases run lexical and fuzzy contamination controls but disable semantic embeddings.
-- The current judge is model-based. A human-reviewed subset is still required before publishing evaluation claims.
+- The blind evaluation system and annotation protocol are implemented, but no genuine human annotation collection is included yet.
 - Embedding similarity can flag paraphrases, but it can also confuse related or contradictory statements. Thresholds require corpus-specific human calibration.
 - The built-in privacy scanner covers structured identifiers only. Production privacy review needs broader detectors and human oversight.
 - Source policy entries are declarations supplied by the operator. Forge verifies presence and permitted-use fields, not legal ownership.
@@ -236,7 +253,7 @@ CI runs linting, format checks, type checking, syntax compilation, tests, and a 
 Forge will be presented as evaluation-ready only after all of the following are public and reproducible:
 
 1. An independently authored evaluation set with documented provenance.
-2. A human-reviewed subset and an explicit scoring protocol.
+2. At least 200 genuine human reviews, 50 overlap items, and agreement that meets the frozen protocol.
 3. Multiple training seeds or an equivalent uncertainty analysis for the selected experiment.
 4. A clean one-command run from a fresh checkout.
 5. CI passing on the tagged release.

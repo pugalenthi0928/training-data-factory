@@ -17,6 +17,7 @@
       <div class="nav-links">
         <a href="index.html">Forge</a>
         <a href="overview.html">Overview</a>
+        <a href="evaluation.html">Evaluation</a>
         <a href="technical.html" class="active">Technical</a>
         <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
       </div>
@@ -30,6 +31,7 @@
         <a href="demo.html">Demo</a>
         <a href="index.html">Evidence</a>
         <a href="overview.html">Overview</a>
+        <a href="evaluation.html">Evaluation</a>
         <a href="technical.html" class="active">Technical</a>
       </div>
       <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
@@ -202,13 +204,14 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
       <p>
         CI uses pinned direct development dependencies and Python 3.11. It checks Ruff linting,
         Ruff formatting, Mypy, Python syntax, Pytest, a 70 percent coverage threshold, a labelled
-        curation calibration gate, and a repeatable release smoke test.
+        curation calibration gate, a blind evaluation-control gate, and a repeatable release smoke test.
       </p>
       <pre><code>make lint
 make typecheck
 make test
 make coverage
-make curation-calibration</code></pre>
+make curation-calibration
+make evaluation-fixture</code></pre>
       <p>
         The offline smoke command completes all 12 typed stages, including both governance boundaries,
         exact and fuzzy deduplication, lexical and fuzzy contamination, dataset profiling, and
@@ -220,15 +223,16 @@ make curation-calibration</code></pre>
       <h2>What remains before a model result is published</h2>
       <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
         <li>Construct an independently authored evaluation set with documented provenance.</li>
-        <li>Create a human-reviewed subset and freeze the scoring protocol.</li>
-        <li>Use a judge from a different model family or calibrate the judge against human ratings.</li>
+        <li>Collect at least 200 genuine reviews, including 50 overlapping items, under the frozen protocol.</li>
+        <li>Run the versioned different-family judge and publish its agreement and reversed-order consistency.</li>
         <li>Run multiple training seeds or publish an equivalent uncertainty design.</li>
         <li>Tag the release only after a fresh-install reproduction and green CI.</li>
       </ol>
 
       <hr>
       <p>
-        See the <a href="https://github.com/pugalenthi0928/training-data-factory">source and tests</a>,
+        See the <a href="evaluation.html">evaluation controls</a>, the
+        <a href="https://github.com/pugalenthi0928/training-data-factory">source and tests</a>,
         or return to the <a href="overview.html">plain-language overview</a>.
       </p>
     </div>
