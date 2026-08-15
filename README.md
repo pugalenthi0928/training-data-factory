@@ -8,6 +8,10 @@ Source-aware training data generation, quality checks, and evaluation workflows.
 
 Forge turns documents into task-specific examples, carries source provenance through the pipeline, prevents one source document from appearing in both train and test, checks generated data against a supplied benchmark, and records the artifacts needed to inspect a run.
 
+**[Run the browser demo](https://pugalenthi0928.github.io/training-data-factory/demo.html) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html)**
+
+The browser demo runs deterministic provenance, contamination, and source-safe split controls without installation or an API key. It is a smoke demo of pipeline behaviour, not a model-quality benchmark.
+
 ## Current status
 
 Forge is in a technical hardening phase. The core pipeline and local MLX fine-tuning path are implemented. Source-safe splitting, mandatory contamination checks, deterministic provenance IDs, Ruff, Mypy, and Pytest are enforced in the repository.
