@@ -85,12 +85,51 @@ def _make_completed_run(root: Path) -> Path:
     _write_json(
         run / "contamination_report.json",
         {
+            "schema_version": "forge.contamination-report/v2",
+            "status": "passed",
             "total_examples": 3,
             "contaminated_count": 0,
             "contamination_rate": 0.0,
             "benchmarks_checked": ["independent"],
+            "detectors": ["lexical_8gram", "fuzzy_shingle_jaccard"],
+            "semantic_model": None,
         },
     )
+    _write_json(
+        run / "source_governance_report.json",
+        {
+            "schema_version": "forge.governance/v1",
+            "status": "passed",
+            "unknown_rights": 0,
+            "disallowed_rights": 0,
+            "kept_documents": 2,
+            "rejected_documents": 0,
+        },
+    )
+    _write_json(
+        run / "record_governance_report.json",
+        {
+            "schema_version": "forge.governance/v1",
+            "status": "passed",
+            "rejected_records": 0,
+            "redacted_records": 0,
+            "remaining_pii_findings": 0,
+        },
+    )
+    _write_json(
+        run / "dedupe_report.json",
+        {
+            "schema_version": "forge.dedupe-report/v1",
+            "status": "passed",
+            "detectors": ["normalised_exact", "minhash_lsh_jaccard"],
+            "dropped_examples": 0,
+            "semantic_model": None,
+        },
+    )
+    _write_json(run / "dataset_profile.json", {"schema_version": "forge.dataset-profile/v1", "records": 3})
+    _write_jsonl(run / "rejected_documents.jsonl", [])
+    _write_jsonl(run / "rejected_records.jsonl", [])
+    _write_jsonl(run / "dedupe_rejections.jsonl", [])
     _write_json(
         run / "split_manifest.json",
         {
@@ -177,6 +216,16 @@ def test_source_overlap_blocks_release(tmp_path: Path) -> None:
     _write_json(run / "split_manifest.json", split)
 
     with pytest.raises(ReleaseValidationError, match="source isolation gate failed"):
+        _release(run)
+
+
+def test_candidate_unknown_source_rights_blocks_release(tmp_path: Path) -> None:
+    run = _make_completed_run(tmp_path)
+    report = json.loads((run / "source_governance_report.json").read_text(encoding="utf-8"))
+    report["unknown_rights"] = 1
+    _write_json(run / "source_governance_report.json", report)
+
+    with pytest.raises(ReleaseValidationError, match="unknown usage rights"):
         _release(run)
 
 

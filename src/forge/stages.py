@@ -6,8 +6,8 @@ import asyncio
 import json
 import os
 import random
-import string
 from collections import Counter
+from itertools import combinations
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -30,14 +30,26 @@ from .contracts import (
     IngestConfig,
     JsonValue,
     JudgmentConfig,
+    ProfileConfig,
     QualityConfig,
+    RecordGovernanceConfig,
     SelectionConfig,
+    SourceGovernanceConfig,
     SplitConfig,
     sha256_file,
 )
+from .governance import audit_decision, govern_documents, govern_records
 from .pipeline import StageContext
+from .profiling import build_dataset_profile, write_profile
+from .similarity import (
+    build_encoder,
+    cosine,
+    lsh_candidate_pairs,
+    minhash_signature,
+    normalise_text,
+    word_shingles,
+)
 
-_PUNCTUATION = str.maketrans("", "", string.punctuation)
 _REFUSAL_PATTERNS = (
     "as an ai language model",
     "i am an ai language model",
@@ -95,12 +107,11 @@ def _run_async(coroutine: Any) -> Any:
 def run_ingest(context: StageContext, config: IngestConfig) -> Mapping[str, JsonValue]:
     loader = UnifiedLoader()
     documents = _run_async(loader.load_documents([Path(source) for source in config.sources]))
-    unique_documents = {document.id: document for document in documents}
-    if not unique_documents:
+    if not documents:
         raise ValueError("No supported source documents were loaded")
 
     rows = []
-    for document in sorted(unique_documents.values(), key=lambda item: item.id):
+    for document in sorted(documents, key=lambda item: (item.id, item.path or "", item.url or "")):
         rows.append(
             {
                 "id": document.id,
@@ -114,6 +125,36 @@ def run_ingest(context: StageContext, config: IngestConfig) -> Mapping[str, Json
         )
     _write_jsonl(context.path("documents.jsonl"), rows)
     return {"documents": len(rows), "declared_sources": len(config.sources)}
+
+
+def run_source_governance(context: StageContext, config: SourceGovernanceConfig) -> Mapping[str, JsonValue]:
+    documents = _read_jsonl(context.path(config.input_path))
+    if not documents:
+        raise ValueError("Source governance received no documents")
+    source_manifest = Path(config.source_manifest).expanduser().resolve() if config.source_manifest else None
+    kept, rejected, report = govern_documents(
+        documents,
+        source_manifest=source_manifest,
+        required_use=config.required_use,
+        pii_action=config.pii_action,
+        allow_unknown_rights=config.allow_unknown_rights,
+    )
+    _write_jsonl(context.path(config.output_path), kept)
+    _write_jsonl(context.path(config.rejected_path), rejected)
+    _write_json(context.path(config.report_path), report)
+    if report["status"] != "passed":
+        raise ValueError(
+            "Source governance gate failed: "
+            f"kept={report['kept_documents']}, unknown_rights={report['unknown_rights']}, "
+            f"disallowed_rights={report['disallowed_rights']}"
+        )
+    return {
+        "input_documents": len(documents),
+        "kept_documents": len(kept),
+        "rejected_documents": len(rejected),
+        "unknown_rights": int(report["unknown_rights"]),
+        "pii_findings": int(report["pii_findings"]),
+    }
 
 
 def _document_from_row(row: Mapping[str, Any]) -> Document:
@@ -176,7 +217,7 @@ async def _generate(config: GenerationConfig, documents: list[Document]) -> list
 
 
 def run_generation(context: StageContext, config: GenerationConfig) -> Mapping[str, JsonValue]:
-    documents = [_document_from_row(row) for row in _read_jsonl(context.path("documents.jsonl"))]
+    documents = [_document_from_row(row) for row in _read_jsonl(context.path(config.input_path))]
     rows = _run_async(_generate(config, documents))
     _write_jsonl(context.path("raw_dataset.jsonl"), rows)
     return {
@@ -249,33 +290,162 @@ def run_quality(context: StageContext, config: QualityConfig) -> Mapping[str, Js
     return {"examples": len(rows), "flag_counts": dict(flag_counts)}
 
 
-def _bow_signature(text: str) -> str:
-    tokens = text.lower().translate(_PUNCTUATION).split()
-    tokens.sort()
-    return " ".join(tokens)
+def run_record_governance(context: StageContext, config: RecordGovernanceConfig) -> Mapping[str, JsonValue]:
+    records = _read_jsonl(context.path(config.input_path))
+    if not records:
+        raise ValueError("Record governance received no examples")
+    kept, rejected, report = govern_records(records, pii_action=config.pii_action, text_fields=config.text_fields)
+    _write_jsonl(context.path(config.output_path), kept)
+    _write_jsonl(context.path(config.rejected_path), rejected)
+    _write_json(context.path(config.report_path), report)
+    if report["status"] != "passed":
+        raise ValueError("Record governance rejected every example")
+    return {
+        "input_examples": len(records),
+        "kept_examples": len(kept),
+        "rejected_examples": len(rejected),
+        "redacted_examples": int(report["redacted_records"]),
+        "pii_findings": int(report["pii_findings"]),
+    }
+
+
+class _UnionFind:
+    def __init__(self, size: int) -> None:
+        self.parent = list(range(size))
+
+    def find(self, item: int) -> int:
+        while self.parent[item] != item:
+            self.parent[item] = self.parent[self.parent[item]]
+            item = self.parent[item]
+        return item
+
+    def union(self, left: int, right: int) -> None:
+        left_root = self.find(left)
+        right_root = self.find(right)
+        if left_root != right_root:
+            self.parent[max(left_root, right_root)] = min(left_root, right_root)
+
+
+def _record_text(row: Mapping[str, Any], fields: Iterable[str]) -> str:
+    return "\n".join(str(row.get(field, "")) for field in fields)
 
 
 def run_dedupe(context: StageContext, config: DedupeConfig) -> Mapping[str, JsonValue]:
-    if config.method != "exact_bow":
-        raise ValueError(f"Unsupported Stage 2 dedupe method: {config.method!r}")
     rows = _read_jsonl(context.path(config.input_path))
     if not rows:
         raise ValueError("Dedupe stage received an empty dataset")
-    seen: set[str] = set()
+    if not 0.0 <= config.fuzzy_threshold <= 1.0 or not 0.0 <= config.semantic_threshold <= 1.0:
+        raise ValueError("Dedupe thresholds must be between zero and one")
+    texts = [_record_text(row, config.text_fields) for row in rows]
+    shingles = [word_shingles(text, config.shingle_size) for text in texts]
+    signatures = [minhash_signature(value, config.minhash_permutations) for value in shingles]
+    candidate_pairs = lsh_candidate_pairs(signatures, config.lsh_bands)
+    exact_groups: dict[str, list[int]] = {}
+    for index, text in enumerate(texts):
+        exact_groups.setdefault(normalise_text(text), []).append(index)
+    for group in exact_groups.values():
+        candidate_pairs.update(combinations(group, 2))
+
+    encoder = build_encoder(config.semantic_backend, config.semantic_model, config.semantic_revision)
+    embeddings: list[list[float]] | None = None
+    if encoder is not None:
+        if len(rows) > config.semantic_max_records:
+            raise ValueError(
+                f"Semantic dedupe is limited to {config.semantic_max_records} records in the local Stage 3 adapter"
+            )
+        embeddings = encoder.encode(texts)
+        if len(embeddings) != len(rows):
+            raise ValueError("Semantic encoder returned the wrong number of embeddings")
+
+    union = _UnionFind(len(rows))
+    pair_evidence: dict[tuple[int, int], dict[str, Any]] = {}
+    reason_counts: Counter[str] = Counter()
+    pairs_to_score = set(candidate_pairs)
+    if embeddings is not None:
+        pairs_to_score.update(combinations(range(len(rows)), 2))
+    for left, right in sorted(pairs_to_score):
+        exact = normalise_text(texts[left]) == normalise_text(texts[right])
+        fuzzy = (
+            len(shingles[left] & shingles[right]) / len(shingles[left] | shingles[right])
+            if shingles[left] | shingles[right]
+            else 1.0
+        )
+        semantic = cosine(embeddings[left], embeddings[right]) if embeddings is not None else None
+        reasons = []
+        if exact:
+            reasons.append("duplicate.exact")
+        if (left, right) in candidate_pairs and fuzzy >= config.fuzzy_threshold:
+            reasons.append("duplicate.fuzzy_minhash")
+        if semantic is not None and semantic >= config.semantic_threshold:
+            reasons.append("duplicate.semantic_embedding")
+        if reasons:
+            union.union(left, right)
+            reason_counts.update(reasons)
+            pair_evidence[(left, right)] = {
+                "reason_codes": reasons,
+                "fuzzy_jaccard": round(fuzzy, 6),
+                "semantic_cosine": round(semantic, 6) if semantic is not None else None,
+            }
+
+    clusters: dict[int, list[int]] = {}
+    for index in range(len(rows)):
+        clusters.setdefault(union.find(index), []).append(index)
     kept: list[dict[str, Any]] = []
-    for row in rows:
-        signature = _bow_signature(str(row.get(config.text_field, "")))
-        if signature in seen:
-            continue
-        seen.add(signature)
-        kept.append(row)
+    rejected: list[dict[str, Any]] = []
+    for members in sorted(clusters.values(), key=lambda values: min(values)):
+        representative = min(
+            members,
+            key=lambda index: (-float(rows[index].get("quality_score", 0.0)), str(rows[index].get("id", index))),
+        )
+        kept_row = rows[representative]
+        audit_decision(
+            kept_row,
+            control="curation.dedupe",
+            outcome="kept",
+            reason_codes=("dedupe.representative",) if len(members) > 1 else ("dedupe.unique",),
+            evidence={"cluster_size": len(members)},
+        )
+        kept.append(kept_row)
+        for member in members:
+            if member == representative:
+                continue
+            rejected_row = rows[member]
+            pair = (min(member, representative), max(member, representative))
+            evidence = pair_evidence.get(pair, {"reason_codes": ["duplicate.transitive_cluster"]})
+            rejected_row["duplicate_of"] = str(kept_row.get("id", representative))
+            audit_decision(
+                rejected_row,
+                control="curation.dedupe",
+                outcome="rejected",
+                reason_codes=evidence["reason_codes"],
+                evidence={key: value for key, value in evidence.items() if key != "reason_codes"},
+            )
+            rejected.append(rejected_row)
     _write_jsonl(context.path(config.output_path), kept)
-    return {
-        "method": config.method,
+    _write_jsonl(context.path(config.rejected_path), rejected)
+    report: dict[str, Any] = {
+        "schema_version": "forge.dedupe-report/v1",
+        "status": "passed",
+        "detectors": [
+            "normalised_exact",
+            "minhash_lsh_jaccard",
+            *(("embedding_cosine",) if encoder is not None else ()),
+        ],
+        "thresholds": {
+            "fuzzy_jaccard": config.fuzzy_threshold,
+            "semantic_cosine": config.semantic_threshold if encoder is not None else None,
+        },
+        "semantic_model": ({"name": encoder.name, "revision": encoder.revision} if encoder is not None else None),
         "input_examples": len(rows),
         "kept_examples": len(kept),
         "dropped_examples": len(rows) - len(kept),
+        "clusters": len(clusters),
+        "lsh_candidate_pairs": len(candidate_pairs),
+        "scored_pairs": len(pairs_to_score),
+        "reason_counts": dict(sorted(reason_counts.items())),
     }
+    _write_json(context.path(config.report_path), report)
+    return report
 
 
 async def _judge(rows: list[dict[str, Any]], config: JudgmentConfig) -> list[dict[str, Any]]:
@@ -309,22 +479,122 @@ def run_contamination(context: StageContext, config: ContaminationConfig) -> Map
     if not rows:
         raise ValueError("Contamination stage received an empty dataset")
     checker = ContaminationChecker()
+    benchmark_entries: list[dict[str, str]] = []
     for benchmark in config.benchmark_paths:
         path = Path(benchmark).expanduser().resolve()
         if not path.is_file():
             raise FileNotFoundError(f"Benchmark file not found: {path}")
         checker.load_benchmark_file(path, name=path.stem)
+        for line_number, record in enumerate(_read_jsonl(path), start=1):
+            values: list[str] = []
+            for field in ("text", "question", "input", "context", "prompt", "answer", "output"):
+                value = record.get(field)
+                if isinstance(value, list):
+                    values.extend(str(item) for item in value if str(item).strip())
+                elif value is not None and str(value).strip():
+                    values.append(str(value))
+            if values:
+                benchmark_entries.append(
+                    {"id": f"{path.name}:{line_number}", "text": "\n".join(values), "source": path.name}
+                )
     if checker.index.size == 0:
         raise ValueError("No usable benchmark text was loaded")
-    report = checker.check_dataset(rows, text_fields=list(config.text_fields))
+    if not benchmark_entries:
+        raise ValueError("Benchmark files contained no supported text fields")
+    comparisons = len(rows) * len(benchmark_entries)
+    if comparisons > config.semantic_max_comparisons and config.semantic_backend != "disabled":
+        raise ValueError(
+            f"Semantic contamination would require {comparisons} comparisons; "
+            f"the local Stage 3 limit is {config.semantic_max_comparisons}"
+        )
+    lexical_report = checker.check_dataset(rows, text_fields=list(config.text_fields))
+    row_texts = [_record_text(row, config.text_fields) for row in rows]
+    benchmark_texts = [entry["text"] for entry in benchmark_entries]
+    row_shingles = [word_shingles(text, config.shingle_size) for text in row_texts]
+    benchmark_shingles = [word_shingles(text, config.shingle_size) for text in benchmark_texts]
+    encoder = build_encoder(config.semantic_backend, config.semantic_model, config.semantic_revision)
+    row_embeddings: list[list[float]] | None = None
+    benchmark_embeddings: list[list[float]] | None = None
+    if encoder is not None:
+        all_embeddings = encoder.encode([*row_texts, *benchmark_texts])
+        if len(all_embeddings) != len(row_texts) + len(benchmark_texts):
+            raise ValueError("Semantic encoder returned the wrong number of contamination embeddings")
+        row_embeddings = all_embeddings[: len(row_texts)]
+        benchmark_embeddings = all_embeddings[len(row_texts) :]
+
+    per_example = []
+    contaminated = 0
+    reason_counts: Counter[str] = Counter()
+    lexical_by_id = {str(item.get("example_id", "")): item for item in lexical_report.get("per_example", [])}
+    for row_index, row in enumerate(rows):
+        lexical = lexical_by_id.get(str(row.get("id", "")), {})
+        best_fuzzy = (0.0, 0)
+        best_semantic: tuple[float, int] | None = None
+        for benchmark_index in range(len(benchmark_entries)):
+            union = row_shingles[row_index] | benchmark_shingles[benchmark_index]
+            fuzzy = len(row_shingles[row_index] & benchmark_shingles[benchmark_index]) / len(union) if union else 1.0
+            if fuzzy > best_fuzzy[0]:
+                best_fuzzy = (fuzzy, benchmark_index)
+            if row_embeddings is not None and benchmark_embeddings is not None:
+                semantic = cosine(row_embeddings[row_index], benchmark_embeddings[benchmark_index])
+                if best_semantic is None or semantic > best_semantic[0]:
+                    best_semantic = (semantic, benchmark_index)
+        reasons: list[str] = []
+        if bool(lexical.get("is_contaminated")):
+            reasons.append("contamination.lexical_ngram")
+        if best_fuzzy[0] >= config.fuzzy_threshold:
+            reasons.append("contamination.fuzzy_jaccard")
+        if best_semantic is not None and best_semantic[0] >= config.semantic_threshold:
+            reasons.append("contamination.semantic_embedding")
+        if reasons:
+            contaminated += 1
+            reason_counts.update(reasons)
+        match_index = (
+            best_semantic[1]
+            if best_semantic is not None and best_semantic[0] >= config.semantic_threshold
+            else best_fuzzy[1]
+        )
+        per_example.append(
+            {
+                "example_id": row.get("id", ""),
+                "is_contaminated": bool(reasons),
+                "reason_codes": reasons,
+                "lexical_8gram_overlaps": int(lexical.get("8gram_overlaps", 0)),
+                "max_fuzzy_jaccard": round(best_fuzzy[0], 6),
+                "max_semantic_cosine": round(best_semantic[0], 6) if best_semantic is not None else None,
+                "closest_benchmark_id": benchmark_entries[match_index]["id"],
+            }
+        )
+    report: dict[str, Any] = {
+        "schema_version": "forge.contamination-report/v2",
+        "status": "passed" if contaminated == 0 else "failed",
+        "total_examples": len(rows),
+        "contaminated_count": contaminated,
+        "contamination_rate": contaminated / len(rows),
+        "benchmarks_checked": list(lexical_report["benchmarks_checked"]),
+        "benchmark_records": len(benchmark_entries),
+        "comparisons": comparisons,
+        "detectors": [
+            "lexical_8gram",
+            "fuzzy_shingle_jaccard",
+            *(("semantic_embedding",) if encoder is not None else ()),
+        ],
+        "thresholds": {
+            "fuzzy_jaccard": config.fuzzy_threshold,
+            "semantic_cosine": config.semantic_threshold if encoder is not None else None,
+        },
+        "semantic_model": ({"name": encoder.name, "revision": encoder.revision} if encoder is not None else None),
+        "reason_counts": dict(sorted(reason_counts.items())),
+        "per_example": per_example,
+    }
     _write_json(context.path(config.output_path), report)
-    contaminated = int(report["contaminated_count"])
     if config.fail_on_contamination and contaminated:
         raise ValueError(f"Contamination gate failed with {contaminated} flagged examples")
     return {
         "examples": len(rows),
         "flagged_examples": contaminated,
         "benchmarks": list(report["benchmarks_checked"]),
+        "detectors": list(report["detectors"]),
     }
 
 
@@ -471,4 +741,44 @@ def run_split(context: StageContext, config: SplitConfig) -> Mapping[str, JsonVa
         "train_sources": len(train_sources),
         "test_sources": len(test_sources),
         "source_overlap": 0,
+    }
+
+
+def run_profile(context: StageContext, config: ProfileConfig) -> Mapping[str, JsonValue]:
+    train = _read_jsonl(context.path(config.train_path))
+    test = _read_jsonl(context.path(config.test_path))
+    if not train or not test:
+        raise ValueError("Dataset profile requires non-empty train and test partitions")
+
+    def read_json(path: str) -> dict[str, Any]:
+        value = json.loads(context.path(path).read_text(encoding="utf-8"))
+        if not isinstance(value, dict):
+            raise ValueError(f"Profile input {path!r} must be a JSON object")
+        return value
+
+    artifact_paths = {
+        "train": context.path(config.train_path),
+        "test": context.path(config.test_path),
+        "source_governance": context.path(config.source_governance_path),
+        "record_governance": context.path(config.record_governance_path),
+        "dedupe_report": context.path(config.dedupe_report_path),
+        "contamination_report": context.path(config.contamination_path),
+    }
+    profile = build_dataset_profile(
+        train=train,
+        test=test,
+        source_governance=read_json(config.source_governance_path),
+        record_governance=read_json(config.record_governance_path),
+        dedupe=read_json(config.dedupe_report_path),
+        contamination=read_json(config.contamination_path),
+        rejected_sources=_read_jsonl(context.path(config.rejected_sources_path)),
+        rejected_records=_read_jsonl(context.path(config.rejected_records_path)),
+        dedupe_rejections=_read_jsonl(context.path(config.dedupe_rejections_path)),
+        artifact_paths=artifact_paths,
+    )
+    write_profile(context.path(config.output_path), profile)
+    return {
+        "records": len(train) + len(test),
+        "sources": int(profile["records"]["sources"]),
+        "rejections": int(profile["curation"]["rejections"]["total"]),
     }

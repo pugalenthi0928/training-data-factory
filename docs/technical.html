@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Forge Technical Controls | Pugalenthi Magendran</title>
-  <meta name="description" content="Technical controls for provenance, source-grouped splitting, contamination screening, statistics, CI, and failure handling in Forge.">
+  <meta name="description" content="Technical controls for provenance, usage rights, privacy, deduplication, contamination, source-grouped splitting, and release verification in Forge.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
@@ -27,6 +27,7 @@
     <h1>Forge</h1>
     <div class="mode-bar-right">
       <div class="tab-group">
+        <a href="demo.html">Demo</a>
         <a href="index.html">Evidence</a>
         <a href="overview.html">Overview</a>
         <a href="technical.html" class="active">Technical</a>
@@ -40,7 +41,8 @@
       <h1>Integrity controls, <em>implemented.</em></h1>
       <p class="subtitle">
         The technical rebuild focuses on the places where training data pipelines most often
-        become misleading: identity, splits, contamination, failure handling, and statistics.
+        become misleading: source rights, privacy, duplicate content, benchmark leakage,
+        partition boundaries, failure handling, and statistical labels.
       </p>
     </section>
 
@@ -76,6 +78,39 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
         uneven, the achieved fraction is recorded explicitly.
       </div>
 
+      <h2>Source and record governance</h2>
+      <p>
+        Source governance runs before any generation call. Candidate builds require a policy
+        record for every loaded file with origin, license, rights holder, and permitted uses.
+        Unknown rights are allowed only in smoke mode. A source without permitted training use
+        is quarantined and prevents the candidate from passing.
+      </p>
+      <p>
+        Deterministic privacy checks cover structured identifiers including email addresses,
+        payment cards with a Luhn checksum, Australian tax file numbers with a checksum, US Social
+        Security number patterns, IPv4 addresses, and Australian phone patterns. The configured
+        action is reject or redact. Generated records then cross a second schema and privacy boundary.
+      </p>
+      <div class="callout">
+        Structured-identifier detection is a minimum control, not complete PII coverage. Names,
+        addresses, domain-specific identifiers, and contextual privacy risks require stronger
+        recognisers and human review in a production policy.
+      </div>
+
+      <h2>Multi-layer deduplication</h2>
+      <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+        <li>Normalised exact text groups capture punctuation and casing variants.</li>
+        <li>Three-token word shingles produce 64-value deterministic MinHash signatures.</li>
+        <li>Thirty-two LSH bands propose fuzzy candidate pairs.</li>
+        <li>Exact Jaccard similarity verifies candidates against the configured threshold.</li>
+        <li>Candidate builds add embedding cosine similarity with a recorded model and revision.</li>
+      </ol>
+      <p>
+        Duplicate components are resolved deterministically. The highest quality score wins, with
+        record identity as the tie-breaker. Rejected rows keep <code>duplicate_of</code>, detector
+        reason codes, and similarity evidence in <code>dedupe_rejections.jsonl</code>.
+      </p>
+
       <h2>Pipeline identity and resume</h2>
       <p>
         The installed <code>forge</code> command, repository wrapper, tests, and future workers share
@@ -97,11 +132,12 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
         Model and prompt identities are stored as metadata and hashes. API keys are never event fields.
       </p>
 
-      <h2>Contamination gate</h2>
+      <h2>Layered contamination gate</h2>
       <p>
-        The contamination command indexes benchmark text into 8-gram and 13-gram sets, then
-        checks generated inputs and outputs for overlap. <code>run_forge.py</code> requires at least one
-        benchmark path. A missing file, an empty index, or flagged overlap stops the run.
+        The contamination stage indexes benchmark text for lexical n-gram overlap, compares word
+        shingle Jaccard similarity, and optionally compares embedding cosine similarity. Candidate
+        configuration refuses a disabled semantic backend. A missing benchmark, empty index, or
+        flagged record stops the run after writing the evidence report.
       </p>
       <pre><code>python scripts/check_contamination.py \
   --input run/judged.jsonl \
@@ -109,8 +145,22 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
   --output run/contamination_report.json \
   --fail-on-contamination</code></pre>
       <p>
-        This is a high-precision lexical screen. It can miss paraphrases and concept-level
-        leakage, so it is one gate rather than a complete contamination solution.
+        Embeddings improve paraphrase sensitivity but do not make contamination detection complete.
+        Related yet distinct records can be false positives, and model-specific thresholds can drift.
+        Forge records the model, revision, thresholds, closest benchmark record, and reason codes.
+      </p>
+
+      <h2>Controlled calibration</h2>
+      <p>
+        <code>make curation-calibration</code> evaluates exact and fuzzy controls on 12 labelled pairs.
+        The fixture includes exact variants, near duplicates, semantic paraphrases, unrelated pairs,
+        and hard negatives. It reports precision, recall, F1, and a 95 percent paired nonparametric
+        bootstrap interval across seeds 17, 42, and 97.
+      </p>
+      <p>
+        The current fuzzy control records precision 0.833333, recall 0.625, and F1 0.714286 on this
+        small fixture. CI requires at least 0.8 precision and 0.5 recall. Those numbers verify a
+        controlled detector path only. They are not production prevalence estimates.
       </p>
 
       <h2>Evaluation statistics</h2>
@@ -141,6 +191,9 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
         <tr><td>Cached output is missing or modified</td><td>Cache entry is rejected and the stage executes again</td></tr>
         <tr><td>Benchmark missing or empty</td><td>Contamination stage exits nonzero</td></tr>
         <tr><td>Contamination threshold crossed</td><td>Report is written, then pipeline exits nonzero</td></tr>
+        <tr><td>Candidate source rights are unknown</td><td>Source governance and release creation fail</td></tr>
+        <tr><td>Training use is not permitted</td><td>Source is quarantined and the gate fails</td></tr>
+        <tr><td>Schema or privacy control fails</td><td>Record is quarantined with machine-readable reason codes</td></tr>
         <tr><td>Source provenance missing</td><td>Split refuses to run</td></tr>
         <tr><td>Release artifact hash disagrees</td><td>Release creation or independent verification fails</td></tr>
       </table>
@@ -148,17 +201,20 @@ chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pr
       <h2>Verified development path</h2>
       <p>
         CI uses pinned direct development dependencies and Python 3.11. It checks Ruff linting,
-        Ruff formatting, Mypy, Python syntax, Pytest, and a 70 percent coverage threshold.
+        Ruff formatting, Mypy, Python syntax, Pytest, a 70 percent coverage threshold, a labelled
+        curation calibration gate, and a repeatable release smoke test.
       </p>
       <pre><code>make lint
 make typecheck
 make test
-make coverage</code></pre>
+make coverage
+make curation-calibration</code></pre>
       <p>
-        The offline smoke command completes ingest, generation, quality scoring, exact deduplication,
-        fake judging, contamination screening, difficulty calibration, source-safe splitting, and
-        independent release verification. CI runs it twice and requires verified cache hits plus an
-        unchanged release identity on the second run.
+        The offline smoke command completes all 12 typed stages, including both governance boundaries,
+        exact and fuzzy deduplication, lexical and fuzzy contamination, dataset profiling, and
+        independent release verification. CI runs it twice and requires 12 verified cache hits plus
+        an unchanged release identity on the second run. Semantic controls are intentionally marked
+        as not run in the smoke release.
       </p>
 
       <h2>What remains before a model result is published</h2>

@@ -228,6 +228,26 @@ class Pipeline:
         error: str | None = None,
         elapsed_seconds: float | None = None,
     ) -> None:
+        external_names = {
+            binding.path: Path(binding.path).name for binding in stage.inputs if binding.scope == "external"
+        }
+
+        def public_value(value: Any) -> Any:
+            converted = json_value(value)
+            if isinstance(converted, str):
+                return external_names.get(converted, converted)
+            if isinstance(converted, list):
+                return [public_value(item) for item in converted]
+            if isinstance(converted, dict):
+                return {key: public_value(item) for key, item in converted.items()}
+            return converted
+
+        def public_artifact(artifact: ArtifactRef) -> dict[str, Any]:
+            value = dict(public_value(artifact))
+            if artifact.scope == "external":
+                value["path"] = Path(artifact.path).name
+            return value
+
         payload: dict[str, Any] = {
             "schema_version": "forge.event/v1",
             "event_id": canonical_sha256(
@@ -245,11 +265,11 @@ class Pipeline:
             "stage": stage.name,
             "stage_version": stage.version,
             "cache_key": cache_key,
-            "config": json_value(stage.config),
+            "config": public_value(stage.config),
             "models": [json_value(model) for model in stage.models],
             "prompts": [json_value(prompt) for prompt in stage.prompts],
-            "inputs": [json_value(artifact) for artifact in inputs],
-            "outputs": [json_value(artifact) for artifact in outputs],
+            "inputs": [public_artifact(artifact) for artifact in inputs],
+            "outputs": [public_artifact(artifact) for artifact in outputs],
         }
         if metrics is not None:
             payload["metrics"] = json_value(metrics)

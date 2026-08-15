@@ -13,6 +13,7 @@ from .workflow import ForgeConfig, run_forge
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Forge: verifiable training-data curation pipeline")
     parser.add_argument("--source", required=True, action="append", help="Source folder or file; repeatable")
+    parser.add_argument("--source-manifest", default=None, help="JSON or JSONL source-rights policy manifest")
     parser.add_argument("--output-dir", required=True, help="Run output directory")
     parser.add_argument("--tasks", default="qa,summary", help="Comma-separated task types")
     parser.add_argument("--model", default="gpt-4.1-mini", help="Generation model")
@@ -24,6 +25,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--select-strategy", default="quality_weighted")
     parser.add_argument("--test-fraction", type=float, default=0.2)
     parser.add_argument("--split-seed", type=int, default=42)
+    parser.add_argument("--pii-action", choices=("reject", "redact"), default="reject")
+    parser.add_argument("--fuzzy-dedupe-threshold", type=float, default=0.8)
+    parser.add_argument("--fuzzy-contamination-threshold", type=float, default=0.8)
+    parser.add_argument(
+        "--semantic-backend",
+        choices=("disabled", "sentence_transformers", "openai"),
+        default="disabled",
+    )
+    parser.add_argument("--semantic-model", default="sentence-transformers/all-MiniLM-L6-v2")
+    parser.add_argument("--semantic-revision", default="main")
+    parser.add_argument("--semantic-dedupe-threshold", type=float, default=0.9)
+    parser.add_argument("--semantic-contamination-threshold", type=float, default=0.9)
     parser.add_argument("--dry-run", action="store_true", help="Use deterministic local generator and judge")
     parser.add_argument("--skip-finetune", action="store_true", help="Retained for compatibility; curation only")
     parser.add_argument("--ft-model", default=None, help=argparse.SUPPRESS)
@@ -57,6 +70,7 @@ def main(argv: list[str] | None = None) -> int:
             for flag, value in (
                 ("--dataset-license", args.dataset_license),
                 ("--benchmark-origin", args.benchmark_origin),
+                ("--source-manifest", args.source_manifest),
             )
             if not value
         ]
@@ -64,9 +78,11 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(f"live runs require release metadata: {', '.join(missing)}")
         if not args.skip_finetune:
             parser.error(
-                "Stage 2 makes curation and release one pipeline. Portable training is a later stage; "
+                "Forge keeps curation and release in one pipeline. Portable training is a later stage; "
                 "pass --skip-finetune for this release workflow."
             )
+        if args.semantic_backend == "disabled":
+            parser.error("candidate runs require --semantic-backend sentence_transformers or openai")
         dataset_license = args.dataset_license
         benchmark_origin = args.benchmark_origin
         release_tier = args.release_tier or "candidate"
@@ -74,6 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     config = ForgeConfig.from_paths(
         sources=args.source,
         benchmarks=args.benchmark_file,
+        source_manifest=args.source_manifest,
         tasks=tuple(task.strip() for task in args.tasks.split(",") if task.strip()),
         model=args.model,
         judge_model=args.judge_model,
@@ -84,6 +101,14 @@ def main(argv: list[str] | None = None) -> int:
         select_strategy=args.select_strategy,
         test_fraction=args.test_fraction,
         split_seed=args.split_seed,
+        pii_action=args.pii_action,
+        fuzzy_dedupe_threshold=args.fuzzy_dedupe_threshold,
+        fuzzy_contamination_threshold=args.fuzzy_contamination_threshold,
+        semantic_backend=args.semantic_backend,
+        semantic_model=args.semantic_model,
+        semantic_revision=args.semantic_revision,
+        semantic_dedupe_threshold=args.semantic_dedupe_threshold,
+        semantic_contamination_threshold=args.semantic_contamination_threshold,
         dry_run=args.dry_run,
         dataset_name=args.dataset_name,
         dataset_version=args.dataset_version,

@@ -15,13 +15,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Sequence
 
-RELEASE_SCHEMA_VERSION = "forge.release/v1"
+RELEASE_SCHEMA_VERSION = "forge.release/v2"
 CROISSANT_VERSION = "http://mlcommons.org/croissant/1.1"
 _REQUIRED_RUN_FILES = (
     "config.json",
     "pipeline_log.json",
+    "source_governance_report.json",
+    "record_governance_report.json",
+    "dedupe_report.json",
     "contamination_report.json",
     "split_manifest.json",
+    "dataset_profile.json",
+    "rejected_documents.jsonl",
+    "rejected_records.jsonl",
+    "dedupe_rejections.jsonl",
     "train.jsonl",
     "test.jsonl",
 )
@@ -129,7 +136,7 @@ def _collect_inputs(values: Iterable[str], run_dir: Path) -> list[Dict[str, Any]
     for value in values:
         resolved = _resolve_input(value, run_dir)
         fingerprint = fingerprint_input(resolved)
-        fingerprint["declared_path"] = value
+        fingerprint["declared_name"] = resolved.name
         fingerprints.append(fingerprint)
     return fingerprints
 
@@ -174,7 +181,54 @@ def _validate_contamination(report: Mapping[str, Any]) -> Dict[str, Any]:
         "status": "passed",
         "benchmarks_checked": benchmarks,
         "flagged_examples": contaminated,
+        "detectors": report.get("detectors", []),
     }
+
+
+def _validate_governance(
+    source: Mapping[str, Any], record: Mapping[str, Any], dedupe: Mapping[str, Any], release_tier: str
+) -> list[Dict[str, Any]]:
+    if source.get("status") != "passed":
+        raise ReleaseValidationError("source governance report is not passing")
+    if record.get("status") != "passed":
+        raise ReleaseValidationError("record governance report is not passing")
+    if dedupe.get("status") != "passed":
+        raise ReleaseValidationError("dedupe report is not passing")
+    unknown = source.get("unknown_rights")
+    disallowed = source.get("disallowed_rights")
+    remaining_pii = record.get("remaining_pii_findings")
+    if not isinstance(unknown, int) or not isinstance(disallowed, int):
+        raise ReleaseValidationError("source governance report has invalid rights counts")
+    if not isinstance(remaining_pii, int):
+        raise ReleaseValidationError("record governance report has no remaining PII count")
+    if release_tier == "candidate" and unknown:
+        raise ReleaseValidationError(f"candidate release has {unknown} sources with unknown usage rights")
+    if disallowed:
+        raise ReleaseValidationError(f"source governance found {disallowed} sources without permitted training use")
+    if remaining_pii:
+        raise ReleaseValidationError(f"privacy gate found {remaining_pii} unresolved structured identifiers")
+    return [
+        {
+            "name": "source_rights",
+            "status": "passed",
+            "unknown_rights": unknown,
+            "disallowed_rights": disallowed,
+            "candidate_enforced": release_tier == "candidate",
+        },
+        {
+            "name": "record_governance",
+            "status": "passed",
+            "rejected_records": record.get("rejected_records"),
+            "redacted_records": record.get("redacted_records"),
+            "remaining_pii_findings": remaining_pii,
+        },
+        {
+            "name": "multi_layer_deduplication",
+            "status": "passed",
+            "detectors": dedupe.get("detectors", []),
+            "dropped_examples": dedupe.get("dropped_examples"),
+        },
+    ]
 
 
 def _validate_split(split: Mapping[str, Any], artifacts: Mapping[str, Mapping[str, Any]]) -> Dict[str, Any]:
@@ -227,7 +281,17 @@ def _identity_material(manifest: Mapping[str, Any]) -> Dict[str, Any]:
                 "records": artifact.get("records"),
             }
             for name, artifact in artifacts.items()
-            if name in {"contamination_report", "split_manifest", "train", "test"}
+            if name
+            in {
+                "source_governance_report",
+                "record_governance_report",
+                "dedupe_report",
+                "contamination_report",
+                "split_manifest",
+                "dataset_profile",
+                "train",
+                "test",
+            }
         },
         "gates": manifest["gates"],
     }
@@ -259,28 +323,46 @@ def build_release_manifest(
     missing = [name for name, value in required_text.items() if not value.strip()]
     if missing:
         raise ReleaseValidationError(f"release metadata is missing: {', '.join(missing)}")
+    if release_tier == "candidate" and dataset_license.strip().lower() in {"unknown", "noassertion", "n/a"}:
+        raise ReleaseValidationError("candidate release requires a declared dataset license")
     for filename in _REQUIRED_RUN_FILES:
         if not (run_dir / filename).is_file():
             raise ReleaseValidationError(f"required release artifact is missing: {run_dir / filename}")
 
     config: Dict[str, Any] = _load_json(run_dir / "config.json", dict)
+    runtime_path = run_dir / ".forge" / "runtime_inputs.json"
+    runtime_inputs: Dict[str, Any] = _load_json(runtime_path, dict) if runtime_path.is_file() else {}
     pipeline_log: list[Dict[str, Any]] = _load_json(run_dir / "pipeline_log.json", list)
+    source_governance: Dict[str, Any] = _load_json(run_dir / "source_governance_report.json", dict)
+    record_governance: Dict[str, Any] = _load_json(run_dir / "record_governance_report.json", dict)
+    dedupe: Dict[str, Any] = _load_json(run_dir / "dedupe_report.json", dict)
     contamination: Dict[str, Any] = _load_json(run_dir / "contamination_report.json", dict)
     split: Dict[str, Any] = _load_json(run_dir / "split_manifest.json", dict)
 
     artifacts = {
         "config": _artifact(run_dir, "run configuration", "config.json"),
         "pipeline_log": _artifact(run_dir, "pipeline event log", "pipeline_log.json"),
+        "source_governance_report": _artifact(
+            run_dir, "source rights and privacy report", "source_governance_report.json"
+        ),
+        "record_governance_report": _artifact(
+            run_dir, "record schema and privacy report", "record_governance_report.json"
+        ),
+        "dedupe_report": _artifact(run_dir, "multi-layer deduplication report", "dedupe_report.json"),
         "contamination_report": _artifact(run_dir, "contamination report", "contamination_report.json"),
         "split_manifest": _artifact(run_dir, "source-safe split manifest", "split_manifest.json"),
+        "dataset_profile": _artifact(run_dir, "dataset profile", "dataset_profile.json"),
+        "rejected_documents": _artifact(run_dir, "rejected source documents", "rejected_documents.jsonl"),
+        "rejected_records": _artifact(run_dir, "rejected records", "rejected_records.jsonl"),
+        "dedupe_rejections": _artifact(run_dir, "duplicate records", "dedupe_rejections.jsonl"),
         "train": _artifact(run_dir, "training split", "train.jsonl"),
         "test": _artifact(run_dir, "test split", "test.jsonl"),
     }
     if (run_dir / "benchmark_results.json").is_file():
         artifacts["benchmark_results"] = _artifact(run_dir, "held-out benchmark results", "benchmark_results.json")
 
-    sources = config.get("source")
-    benchmarks = config.get("benchmark_file")
+    sources = runtime_inputs.get("sources", config.get("source"))
+    benchmarks = runtime_inputs.get("benchmarks", config.get("benchmark_file"))
     if not isinstance(sources, list) or not sources or not all(isinstance(item, str) for item in sources):
         raise ReleaseValidationError("run configuration does not declare source inputs")
     if not isinstance(benchmarks, list) or not benchmarks or not all(isinstance(item, str) for item in benchmarks):
@@ -288,6 +370,7 @@ def build_release_manifest(
 
     gates = [
         _validate_pipeline_log(pipeline_log),
+        *_validate_governance(source_governance, record_governance, dedupe, release_tier),
         _validate_contamination(contamination),
         _validate_split(split, artifacts),
         {
@@ -311,6 +394,11 @@ def build_release_manifest(
         "inputs": {
             "sources": _collect_inputs(sources, run_dir),
             "benchmarks": _collect_inputs(benchmarks, run_dir),
+            "source_rights": (
+                _collect_inputs([runtime_inputs["source_manifest"]], run_dir)
+                if isinstance(runtime_inputs.get("source_manifest"), str) and runtime_inputs["source_manifest"]
+                else []
+            ),
         },
         "benchmark_origin": benchmark_origin,
         "artifacts": artifacts,
@@ -327,8 +415,14 @@ def build_release_manifest(
         "claim_status": {
             "pipeline_integrity": "established",
             "source_isolation": "established",
+            "source_rights": "checked_with_unknowns_allowed" if source_governance["unknown_rights"] else "checked",
+            "structured_identifier_privacy": "checked_with_limited_detector_scope",
+            "exact_and_fuzzy_deduplication": "checked",
+            "semantic_deduplication": "checked" if dedupe.get("semantic_model") else "not_run_in_smoke_release",
             "lexical_contamination": "checked",
-            "semantic_contamination": "not_yet_checked",
+            "semantic_contamination": (
+                "checked" if contamination.get("semantic_model") else "not_run_in_smoke_release"
+            ),
             "human_calibration": "not_yet_completed",
             "model_quality": "not_established_by_this_release",
         },

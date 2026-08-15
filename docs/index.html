@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Forge | Auditable Training Data Systems</title>
-  <meta name="description" content="Forge is a source-aware training data pipeline with explicit provenance, contamination checks, safe splits, and inspectable evaluation artifacts.">
+  <meta name="description" content="Forge is a source-aware training data pipeline with rights, privacy, deduplication, contamination, split, and release evidence.">
   <meta property="og:title" content="Forge | Auditable Training Data Systems">
-  <meta property="og:description" content="Source-aware generation, quality controls, contamination gates, and honest evaluation boundaries.">
+  <meta property="og:description" content="Source-aware generation with governance, layered curation, contamination gates, and honest evaluation boundaries.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,6 +30,7 @@
     <h1>Forge</h1>
     <div class="mode-bar-right">
       <div class="tab-group">
+        <a href="demo.html">Demo</a>
         <a href="index.html" class="active">Evidence</a>
         <a href="overview.html">Overview</a>
         <a href="technical.html">Technical</a>
@@ -42,28 +43,28 @@
     <section class="hero">
       <h1>Build training data you can <em>audit.</em></h1>
       <p class="subtitle">
-        Forge carries source identity through generation, quality checks, contamination screening,
-        source-grouped splitting, and a content-addressed release. Every important boundary is visible.
+        Forge carries source identity and usage policy through generation, privacy checks, layered
+        deduplication, contamination screening, source-grouped splitting, and a content-addressed release.
       </p>
       <div class="grid-3" style="max-width: 760px; margin: 0 auto;">
         <div class="stat">
-          <span class="number">0</span>
-          <span class="label">Allowed source overlap</span>
+          <span class="number">12</span>
+          <span class="label">Typed pipeline stages</span>
         </div>
         <div class="stat">
-          <span class="number">70%</span>
-          <span class="label">Coverage gate</span>
+          <span class="number">3</span>
+          <span class="label">Similarity layers</span>
         </div>
         <div class="stat">
-          <span class="number green">1 cmd</span>
-          <span class="label">Offline smoke run</span>
+          <span class="number green">0</span>
+          <span class="label">Unknown rights in candidates</span>
         </div>
       </div>
     </section>
 
     <div class="container wide">
       <div class="callout">
-        <strong>Evaluation status:</strong> the pipeline is implemented and verified, but the historical
+        <strong>Evidence boundary:</strong> curation and governance controls are implemented and verified, but the historical
         model run is not treated as independent performance evidence. An independently authored
         benchmark and a human-reviewed subset are release gates, not footnotes.
       </div>
@@ -71,16 +72,16 @@
       <h2>Trust boundaries first</h2>
       <div class="grid-3">
         <div class="card">
-          <h3>Verified resume</h3>
-          <p>A cache hit requires the same stage contract, input hashes, configuration, and unmodified output artifacts.</p>
+          <h3>Rights before generation</h3>
+          <p>Candidate builds require a declared license and permitted training use for every loaded source.</p>
         </div>
         <div class="card">
-          <h3>Source-safe split</h3>
-          <p>A complete source document belongs to either train or test. Missing provenance stops the run.</p>
+          <h3>Auditable quarantine</h3>
+          <p>Schema, privacy, and duplicate rejections carry reason codes, evidence, and a retained source identity.</p>
         </div>
         <div class="card">
-          <h3>Mandatory gate</h3>
-          <p>A live run requires benchmark data. Missing inputs or flagged contamination return a failing exit code.</p>
+          <h3>Layered comparison</h3>
+          <p>Exact, MinHash LSH, Jaccard, and optional embedding controls screen duplicates and benchmark overlap.</p>
         </div>
       </div>
 
@@ -88,17 +89,17 @@
       <div class="pipeline">
         <div class="step"><span class="num">1</span>Ingest</div>
         <span class="arrow">&#8594;</span>
-        <div class="step"><span class="num">2</span>Generate</div>
+        <div class="step"><span class="num">2</span>Source governance</div>
         <span class="arrow">&#8594;</span>
-        <div class="step"><span class="num">3</span>Quality</div>
+        <div class="step"><span class="num">3</span>Generate + quality</div>
         <span class="arrow">&#8594;</span>
-        <div class="step"><span class="num">4</span>Dedup</div>
+        <div class="step"><span class="num">4</span>Record governance</div>
         <span class="arrow">&#8594;</span>
-        <div class="step"><span class="num">5</span>Judge</div>
+        <div class="step"><span class="num">5</span>Dedup + judge</div>
         <span class="arrow">&#8594;</span>
         <div class="step"><span class="num">6</span>Contamination</div>
         <span class="arrow">&#8594;</span>
-        <div class="step"><span class="num">7</span>Select + split</div>
+        <div class="step"><span class="num">7</span>Select + split + profile</div>
         <span class="arrow">&#8594;</span>
         <div class="step"><span class="num">8</span>Release</div>
       </div>
@@ -114,14 +115,23 @@
           <p>Source, benchmark, and artifact fingerprints, release gates, claim boundaries, and a deterministic release ID.</p>
         </div>
         <div class="card">
-          <h3>Contamination report</h3>
-          <p>Benchmarks loaded, index size, flagged records, matching n-grams, and aggregate contamination rate.</p>
+          <h3>Governance reports</h3>
+          <p>Rights decisions, privacy findings, schema rejections, duplicate clusters, detector versions, and thresholds.</p>
         </div>
         <div class="card">
-          <h3>Structured events</h3>
-          <p>Start, completion, failure, and cache-hit events with configuration, models, prompt identities, inputs, and outputs.</p>
+          <h3>Dataset profile</h3>
+          <p>Sources, tasks, lengths, quality, difficulty, rejection reasons, and hashes for every release-facing artifact.</p>
         </div>
       </div>
+
+      <h2>Measured curation controls</h2>
+      <p>
+        The checked-in 12-pair fixture contains exact copies, near duplicates, semantic paraphrases,
+        unrelated pairs, and hard negatives. MinHash LSH plus Jaccard records precision 0.833333,
+        recall 0.625, F1 0.714286, and a multi-seed bootstrap interval on that fixture. The fixture
+        tests control behaviour. It does not estimate production-corpus quality.
+      </p>
+      <pre><code>make curation-calibration</code></pre>
 
       <hr>
       <h2>Start with the smoke run</h2>
