@@ -117,3 +117,31 @@ jobs:
           second_release=$(python scripts/release_dataset.py --run-dir runs/ci_smoke --verify | python -c 'import json,sys; print(json.load(sys.stdin)["release_id"])')
           test "$first_release" = "$second_release"
           python -c 'import json; entries=json.load(open("runs/ci_smoke/pipeline_log.json")); assert entries and all(e["execution"] == "cached" for e in entries)'
+
+  hosted-container:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build hosted demonstration image
+        run: docker build -t forge-hosted-ci .
+      - name: Verify container health and packaged interface
+        run: |
+          docker run --detach --name forge-hosted-ci --publish 8000:8000 forge-hosted-ci
+          trap 'docker logs forge-hosted-ci; docker rm --force forge-hosted-ci' EXIT
+          python - <<'PY'
+          import time
+          import urllib.request
+
+          for _ in range(40):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2) as response:
+                      assert response.status == 200
+                  with urllib.request.urlopen("http://127.0.0.1:8000/", timeout=2) as response:
+                      assert b"Run the real pipeline" in response.read()
+                  break
+              except Exception:
+                  time.sleep(0.5)
+          else:
+              raise SystemExit("Hosted container did not become healthy")
+          PY

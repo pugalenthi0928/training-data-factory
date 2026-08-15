@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "forge-training-data"
-version = "0.12.0"
+version = "0.13.0"
 description = "Source-aware training data generation, quality checks, and evaluation workflows"
 authors = [{ name = "Pugalenthi Magendran" }]
 requires-python = ">=3.11"
@@ -16,6 +16,9 @@ dependencies = [
     "openai>=2.0.0",
     "pandas>=2.0.0",
     "streamlit>=1.30.0",
+    "fastapi>=0.139.0,<1.0.0",
+    "pydantic>=2.10.0,<3.0.0",
+    "uvicorn>=0.51.0,<1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -26,6 +29,7 @@ dev = [
     "mypy>=1.10,<2.0",
     "hypothesis>=6.0",
     "rouge-score>=0.1.2",
+    "httpx>=0.28.0,<1.0.0",
 ]
 mlx = [
     "mlx>=0.12.0",
@@ -42,8 +46,12 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+forge = ["web_static/*.html", "web_static/*.css", "web_static/*.js"]
+
 [project.scripts]
 forge = "forge.cli:main"
+forge-web = "forge.web:main"
 tdr = "training_data_robo.cli:main"
 
 [tool.ruff]
