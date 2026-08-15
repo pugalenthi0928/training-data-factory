@@ -45,3 +45,27 @@ jobs:
         run: python -m py_compile app.py scripts/*.py
       - name: Run tests with coverage
         run: pytest --cov=training_data_robo --cov-report=term-missing --cov-fail-under=70
+
+  release-smoke:
+    runs-on: ubuntu-latest
+    needs: [typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -c constraints-dev.txt -e ".[dev]"
+      - name: Build content-addressed smoke release
+        run: |
+          python scripts/run_forge.py \
+            --source ./sample_docs \
+            --output-dir runs/ci_smoke \
+            --tasks qa,summary \
+            --max-examples 40 \
+            --benchmark-file sample_benchmarks/contamination_smoke_test.jsonl \
+            --dry-run
+      - name: Verify release artifacts
+        run: python scripts/release_dataset.py --run-dir runs/ci_smoke --verify

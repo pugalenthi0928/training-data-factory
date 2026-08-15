@@ -32,6 +32,8 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from training_data_robo.releases import write_release
+
 
 def _run_step(name: str, cmd: List[str], output_dir: Path) -> bool:
     """Run a subprocess step with logging."""
@@ -89,7 +91,33 @@ def main() -> None:
         required=True,
         help="Independent benchmark JSONL for the mandatory contamination gate; repeatable",
     )
+    ap.add_argument("--dataset-name", default="forge-generated-dataset", help="Logical dataset release name")
+    ap.add_argument("--dataset-version", default="0.1.0", help="Dataset release version")
+    ap.add_argument("--dataset-license", default=None, help="Dataset license identifier or URL")
+    ap.add_argument(
+        "--benchmark-origin",
+        default=None,
+        help="Who authored the benchmark and how it was kept independent",
+    )
+    ap.add_argument("--release-tier", choices=("smoke", "candidate"), default=None)
     args = ap.parse_args()
+
+    if args.dry_run:
+        args.dataset_license = args.dataset_license or "NOASSERTION"
+        args.benchmark_origin = args.benchmark_origin or "repository synthetic contamination fixture"
+        args.release_tier = args.release_tier or "smoke"
+    else:
+        missing_release_metadata = [
+            flag
+            for flag, value in (
+                ("--dataset-license", args.dataset_license),
+                ("--benchmark-origin", args.benchmark_origin),
+            )
+            if not value
+        ]
+        if missing_release_metadata:
+            ap.error(f"live runs require release metadata: {', '.join(missing_release_metadata)}")
+        args.release_tier = args.release_tier or "candidate"
 
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -317,9 +345,19 @@ print(json.dumps({{"selected": len(selected), "from": len(rows), "strategy": "{a
     config["completed_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
     (out / "config.json").write_text(json.dumps(config, indent=2, default=str), encoding="utf-8")
 
+    release = write_release(
+        out,
+        dataset_name=args.dataset_name,
+        dataset_version=args.dataset_version,
+        dataset_license=args.dataset_license,
+        benchmark_origin=args.benchmark_origin,
+        release_tier=args.release_tier,
+    )
+
     print(f"\n{'=' * 60}")
     print("  FORGE PIPELINE COMPLETE")
     print(f"  Output: {out}")
+    print(f"  Release: {release['release_id']} ({release['release_tier']})")
     print(f"{'=' * 60}")
 
 

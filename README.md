@@ -8,7 +8,7 @@ Source-aware training data generation, quality checks, and evaluation workflows.
 
 Forge turns documents into task-specific examples, carries source provenance through the pipeline, prevents one source document from appearing in both train and test, checks generated data against a supplied benchmark, and records the artifacts needed to inspect a run.
 
-**[Run the browser demo](https://pugalenthi0928.github.io/training-data-factory/demo.html) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html)**
+**[Run the browser demo](https://pugalenthi0928.github.io/training-data-factory/demo.html) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html) | [Engineering roadmap](docs/engineering-roadmap.md)**
 
 The browser demo runs deterministic provenance, contamination, and source-safe split controls without installation or an API key. It is a smoke demo of pipeline behaviour, not a model-quality benchmark.
 
@@ -72,6 +72,16 @@ Outputs are written to a timestamped directory under `runs/`, including:
 - `split_manifest.json`
 - `train.jsonl`
 - `test.jsonl`
+- `release_manifest.json`
+- `croissant.json`
+
+The release manifest fingerprints the source inputs, benchmark inputs, and output artifacts. It blocks release when pipeline stages fail, contamination is detected, source partitions overlap, counts disagree, or artifact hashes do not match. The release ID is content-addressed and can be verified independently:
+
+```bash
+python scripts/release_dataset.py \
+  --run-dir runs/forge_YYYYMMDD_HHMMSS \
+  --verify
+```
 
 ## Run with a real generator
 
@@ -125,6 +135,7 @@ src/training_data_robo/
   judge.py           Rubric-based model judging
   selector.py        Quality, diversity, balance, and curriculum selection
   pipeline.py        DAG execution, caching, and resume
+  releases.py        Content-addressed release gates and Croissant metadata
 
 scripts/
   run_forge.py            End-to-end pipeline entry point
@@ -132,6 +143,7 @@ scripts/
   check_contamination.py  Benchmark overlap gate
   benchmark.py            Paired model comparison and uncertainty
   finetune_mlx.py         Local LoRA fine-tuning
+  release_dataset.py      Release creation and independent verification
 
 tests/                    Unit, property, provenance, and integrity tests
 sample_docs/              Public smoke-test source documents
@@ -156,6 +168,7 @@ CI runs linting, format checks, type checking, syntax compilation, tests, and a 
 - Exact-hash deduplication does not remove semantic duplicates. Stronger near-duplicate controls are planned.
 - The included smoke benchmark is synthetic and deliberately small.
 - The current local fine-tuning path is MLX-specific.
+- The hosted browser demo mirrors core controls but does not yet execute the Python pipeline.
 
 ## Release criteria
 
@@ -166,6 +179,8 @@ Forge will be presented as evaluation-ready only after all of the following are 
 3. Multiple training seeds or an equivalent uncertainty analysis for the selected experiment.
 4. A clean one-command run from a fresh checkout.
 5. CI passing on the tagged release.
+
+The staged path from the current system to the public `v1.0` target is documented in the [engineering roadmap](docs/engineering-roadmap.md).
 
 ## License
 
