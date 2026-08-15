@@ -1,34 +1,47 @@
 """Tests for train/test split utility."""
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from split_dataset import stratified_split
+from split_dataset import assert_no_identifier_overlap, stratified_split
 
 
-def _make_rows(n: int = 20) -> list:
+def _make_rows(n_sources: int = 10) -> list:
     tasks = ["qa_v1", "summary_v1", "cot_v1"]
-    return [{"id": str(i), "task_name": tasks[i % len(tasks)]} for i in range(n)]
+    rows = []
+    for source_index in range(n_sources):
+        for task_index, task in enumerate(tasks):
+            rows.append(
+                {
+                    "id": f"{source_index}-{task_index}",
+                    "task_name": task,
+                    "document_id": f"doc-{source_index}",
+                    "chunk_id": f"chunk-{source_index}-{task_index}",
+                }
+            )
+    return rows
 
 
 class TestStratifiedSplit:
     def test_basic_split(self):
-        rows = _make_rows(30)
+        rows = _make_rows(10)
         train, test = stratified_split(rows, test_fraction=0.2)
         assert len(train) + len(test) == 30
-        assert len(test) >= 3  # at least 1 per group
+        assert len(test) == 6
 
     def test_proportions(self):
         rows = _make_rows(100)
         train, test = stratified_split(rows, test_fraction=0.2)
-        # Should be roughly 80/20
-        assert 70 <= len(train) <= 85
-        assert 15 <= len(test) <= 30
+        assert len(train) == 240
+        assert len(test) == 60
 
     def test_stratification(self):
-        rows = _make_rows(30)  # 10 each of 3 tasks
+        rows = _make_rows(10)
         train, test = stratified_split(rows, test_fraction=0.2)
         # Each task should be in both train and test
         train_tasks = set(r["task_name"] for r in train)
@@ -52,15 +65,43 @@ class TestStratifiedSplit:
         ids2 = [r["id"] for r in train2]
         assert ids1 != ids2
 
-    def test_very_small_groups(self):
-        rows = [
-            {"id": "1", "task_name": "rare_task"},
-            {"id": "2", "task_name": "rare_task"},
-            {"id": "3", "task_name": "common"},
-            {"id": "4", "task_name": "common"},
-            {"id": "5", "task_name": "common"},
-            {"id": "6", "task_name": "common"},
-        ]
-        train, test = stratified_split(rows, test_fraction=0.3)
-        # rare_task has only 2 examples → should all go to train
-        assert len(train) + len(test) == 6
+    def test_source_documents_never_cross_partitions(self):
+        train, test = stratified_split(_make_rows(12), test_fraction=0.25)
+        train_sources = {row["document_id"] for row in train}
+        test_sources = {row["document_id"] for row in test}
+        assert train_sources.isdisjoint(test_sources)
+
+    def test_uneven_sources_choose_closest_row_fraction(self):
+        rows = []
+        for source_id, count in {"large-a": 40, "large-b": 40, "tiny": 4}.items():
+            rows.extend(
+                {
+                    "id": f"{source_id}-{index}",
+                    "document_id": source_id,
+                    "chunk_id": f"{source_id}-chunk-{index}",
+                }
+                for index in range(count)
+            )
+
+        _, test = stratified_split(rows, test_fraction=0.2, seed=3)
+        assert len(test) == 4
+
+    def test_missing_source_provenance_fails_closed(self):
+        rows = _make_rows(3)
+        del rows[0]["document_id"]
+        with pytest.raises(ValueError, match="missing required provenance"):
+            stratified_split(rows)
+
+    def test_single_source_cannot_be_split_safely(self):
+        with pytest.raises(ValueError, match="At least two unique"):
+            stratified_split(_make_rows(1))
+
+    def test_invalid_fraction_is_rejected(self):
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            stratified_split(_make_rows(3), test_fraction=1.0)
+
+    def test_chunk_overlap_is_detected(self):
+        train = [{"document_id": "doc-a", "chunk_id": "shared"}]
+        test = [{"document_id": "doc-b", "chunk_id": "shared"}]
+        with pytest.raises(ValueError, match="Unsafe split"):
+            assert_no_identifier_overlap(train, test, "chunk_id")

@@ -40,10 +40,7 @@ def build_task_templates_from_names(names: List[str]) -> List[TaskTemplate]:
                     name="qa_v1",
                     version="v1",
                     task_type=TaskType.QA,
-                    system_prompt=(
-                        "You are a helpful assistant that writes question-answer "
-                        "pairs from text."
-                    ),
+                    system_prompt=("You are a helpful assistant that writes question-answer pairs from text."),
                     user_prompt_template=(
                         "Read the following passage and generate ONE useful question "
                         "and its answer.\n\nPassage:\n\n{text}"
@@ -59,13 +56,9 @@ def build_task_templates_from_names(names: List[str]) -> List[TaskTemplate]:
                     name="key_points_v1",
                     version="v1",
                     task_type=TaskType.KEY_POINTS,
-                    system_prompt=(
-                        "You extract the most important bullet-point key ideas "
-                        "from the passage."
-                    ),
+                    system_prompt=("You extract the most important bullet-point key ideas from the passage."),
                     user_prompt_template=(
-                        "Read the following text and extract 3–5 concise bullet "
-                        "point key ideas.\n\n{text}"
+                        "Read the following text and extract 3-5 concise bullet point key ideas.\n\n{text}"
                     ),
                     max_output_tokens=256,
                     temperature=0.3,
@@ -80,8 +73,7 @@ def build_task_templates_from_names(names: List[str]) -> List[TaskTemplate]:
                     task_type=TaskType.TITLE,
                     system_prompt="You write short, descriptive titles for texts.",
                     user_prompt_template=(
-                        "Write a short (max 12 words) descriptive title for the "
-                        "following text:\n\n{text}"
+                        "Write a short (max 12 words) descriptive title for the following text:\n\n{text}"
                     ),
                     max_output_tokens=32,
                     temperature=0.7,
@@ -150,10 +142,7 @@ def build_task_templates_from_names(names: List[str]) -> List[TaskTemplate]:
             continue
 
     if not templates:
-        raise SystemExit(
-            f"No valid tasks in {names!r}. "
-            "Supported: summary, qa, key_points, title, instruction, cot."
-        )
+        raise SystemExit(f"No valid tasks in {names!r}. Supported: summary, qa, key_points, title, instruction, cot.")
 
     return templates
 
@@ -191,7 +180,7 @@ async def handle_process(args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tdr",
-        description="Training Data Robo – generate synthetic training datasets.",
+        description="Forge - generate source-grounded training datasets.",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -308,6 +297,7 @@ def main(argv: list[str] | None = None) -> None:
         asyncio.run(handle_process(args))
     elif args.command == "export-finetune":
         from .exporters import export_finetune
+
         export_finetune(
             input_path=Path(args.input_path),
             output_path=Path(args.output_path),
@@ -315,6 +305,7 @@ def main(argv: list[str] | None = None) -> None:
         )
     elif args.command == "export-rag-qa":
         from .exporters import export_rag_qa
+
         export_rag_qa(
             input_path=Path(args.input_path),
             output_path=Path(args.output_path),

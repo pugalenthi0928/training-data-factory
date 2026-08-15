@@ -64,10 +64,7 @@ def export_finetune(
     df["input_text"] = df["input_text"].astype(str)
     df["output_text"] = df["output_text"].astype(str)
 
-    df = df[
-        (df["input_text"].str.strip() != "")
-        & (df["output_text"].str.strip() != "")
-    ]
+    df = df[(df["input_text"].str.strip() != "") & (df["output_text"].str.strip() != "")]
 
     if df.empty:
         raise SystemExit("No rows available after filtering and cleaning for export.")
@@ -119,9 +116,7 @@ def export_finetune(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Export a dataset JSONL into a fine-tuning format."
-    )
+    parser = argparse.ArgumentParser(description="Export a dataset JSONL into a fine-tuning format.")
     parser.add_argument(
         "--input",
         required=True,

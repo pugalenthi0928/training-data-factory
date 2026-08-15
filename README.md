@@ -1,166 +1,167 @@
-# Forge - Training Data Engine That Proves Its Own Worth
+# Forge
 
 [![CI](https://github.com/pugalenthi0928/training-data-factory/actions/workflows/ci.yml/badge.svg)](https://github.com/pugalenthi0928/training-data-factory/actions)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Forge does not just generate training data. It proves the data works.**
+Source-aware training data generation, quality checks, and evaluation workflows.
 
-Generate multi-strategy training data from documents, evaluate it with LLM-as-judge rubrics, detect benchmark contamination, fine-tune a model locally on Apple Silicon, and benchmark before/after with statistical significance testing. One command, end to end.
+Forge turns documents into task-specific examples, carries source provenance through the pipeline, prevents one source document from appearing in both train and test, checks generated data against a supplied benchmark, and records the artifacts needed to inspect a run.
 
-**[Demo](https://pugalenthi0928.github.io/training-data-factory/) | [Overview](https://pugalenthi0928.github.io/training-data-factory/overview.html) | [Technical Deep-Dive](https://pugalenthi0928.github.io/training-data-factory/technical.html)**
+## Current status
 
-## Architecture
+Forge is in a technical hardening phase. The core pipeline and local MLX fine-tuning path are implemented. Source-safe splitting, mandatory contamination checks, deterministic provenance IDs, Ruff, Mypy, and Pytest are enforced in the repository.
+
+Historical model results are not presented as independent evidence. The earlier run used references derived from the same generation process, and the same model family was used for generation and judging. Those artifacts are retained for traceability, not as a headline performance claim.
+
+The next release gate is an independently authored evaluation set plus a human-reviewed scoring subset.
+
+## Why this repository exists
+
+Training data work is easy to demo and difficult to validate. Forge makes the trust boundaries visible:
+
+| Risk | Repository control |
+| --- | --- |
+| The same source appears in train and test | Whole documents are assigned to one partition by `document_id` |
+| Provenance changes between runs | Document and chunk IDs are content-derived and deterministic |
+| A split cannot be audited | The split manifest records counts, overlap checks, seed, and SHA-256 artifact hashes |
+| Evaluation data leaks into training | A supplied benchmark is mandatory and contamination can fail the run |
+| A statistical test is mislabeled | The benchmark reports a paired randomization test and a paired bootstrap confidence interval separately |
+| A failed stage is silently ignored | The one-command pipeline exits when a required stage fails |
+
+## Pipeline
 
 ```mermaid
-graph LR
-    A[Documents] --> B[Chunk]
-    B --> C[Generate]
-    C --> D[Quality Score]
-    D --> E[Deduplicate]
-    E --> F[LLM-as-Judge]
-    F --> G[Contamination Check]
-    G --> H[Difficulty Calibrate]
-    H --> I[Select + Split]
-    I --> J[Fine-Tune MLX]
-    J --> K[Benchmark]
+flowchart LR
+    A[Source documents] --> B[Stable provenance]
+    B --> C[Chunk and generate]
+    C --> D[Quality and deduplication]
+    D --> E[Judge and difficulty]
+    E --> F[Contamination gate]
+    F --> G[Source-grouped split]
+    G --> H[Fine-tune]
+    H --> I[Held-out comparison]
+    G --> J[Split manifest]
+    I --> K[Metrics, interval, and test]
 ```
 
-## Quick Start
+The held-out comparison is an internal regression check until the independent evaluation release is complete.
+
+## Quick start
+
+Requirements: Python 3.11 or newer.
 
 ```bash
-# Install
 git clone https://github.com/pugalenthi0928/training-data-factory.git
 cd training-data-factory
 make install
-
-# Dry run (no API calls, uses DummyLLM)
 make forge
-
-# Full pipeline with real models
-export OPENAI_API_KEY=sk-...
-make forge-live
-
-# Dashboard
-make dashboard
 ```
 
-## What Makes This Different
+`make forge` is an offline smoke run. It uses the dummy model and a small synthetic contamination fixture to exercise the pipeline without API calls. The fixture tests the mechanism only. It is not a model benchmark.
 
-| Feature | Most Projects | Forge |
-|---------|--------------|-------|
-| Data generation | Single task (QA only) | 6 task types: QA, summary, key points, title, instruction-following, chain-of-thought |
-| Quality evaluation | Manual spot-check | LLM-as-judge with 4-dimension rubric (faithfulness, helpfulness, complexity, coherence) |
-| Contamination | Ignored | N-gram overlap detection against benchmark datasets |
-| Proof it works | "Trust me" | Fine-tune + benchmark with statistical significance testing |
-| Pipeline | Bash scripts | DAG runner with caching, resume, and experiment tracking |
-| Chunking | Naive paragraph split | Structure-aware: detects headers, lists, tables |
+Outputs are written to a timestamped directory under `runs/`, including:
 
-## Pipeline Steps
+- `config.json`
+- `pipeline_log.json`
+- `contamination_report.json`
+- `split_manifest.json`
+- `train.jsonl`
+- `test.jsonl`
 
-1. **Generate** - Multi-strategy training data from source documents via GPT-4.1-mini
-2. **Quality Score** - Heuristic quality flags (length, refusal detection, readability)
-3. **Deduplicate** - Hash-based and embedding-based deduplication
-4. **LLM-as-Judge** - GPT-4.1-mini scores each example on 4 rubric dimensions (1-5 scale)
-5. **Contamination Check** - 8-gram and 13-gram overlap detection against benchmark datasets
-6. **Difficulty Calibration** - Heuristic difficulty tagging (easy/medium/hard)
-7. **Select** - Top-N selection via quality-weighted, diverse, balanced, or curriculum strategies
-8. **Train/Test Split** - Stratified split preserving task-type proportions
-9. **Fine-Tune** - LoRA fine-tuning on Apple Silicon via MLX (Qwen 2.5 0.5B, zero GPU cost)
-10. **Benchmark** - Base vs fine-tuned comparison with ROUGE, exact match, and paired bootstrap significance
+## Run with a real generator
 
-## Project Structure
-
-```
-src/training_data_robo/
-├── bot.py              # High-level orchestrator
-├── cli.py              # CLI entry point (tdr process)
-├── models.py           # Domain models (TaskType, TrainingExample, ...)
-├── chunking.py         # Structure-aware document chunking
-├── task_selector.py    # Adaptive task selection per chunk type
-├── quality.py          # Quality filtering (refusals, length, dedup)
-├── judge.py            # LLM-as-judge with rubric evaluation
-├── contamination.py    # N-gram contamination detection
-├── diversity.py        # Vocabulary & task diversity metrics
-├── difficulty.py       # Difficulty calibration (easy/medium/hard)
-├── selector.py         # Data selection strategies
-├── pipeline.py         # DAG pipeline runner with caching & resume
-├── tracker.py          # Lightweight experiment tracker
-├── io.py               # Consolidated JSONL I/O
-├── ai_client.py        # LLM client abstraction (OpenAI + Dummy)
-└── settings.py         # Configuration
-
-scripts/
-├── run_forge.py        # One-command pipeline orchestrator
-├── run_judge.py        # LLM-as-judge CLI
-├── check_contamination.py  # Contamination detection CLI
-├── calibrate_difficulty.py # Difficulty calibration CLI
-├── split_dataset.py    # Stratified train/test split
-├── finetune_mlx.py     # MLX LoRA fine-tuning
-├── benchmark.py        # Base vs fine-tuned benchmarking
-└── postprocess_quality.py  # Quality scoring CLI
-
-app.py                  # Streamlit dashboard (5 pages)
-```
-
-## Dashboard
-
-The Streamlit dashboard (`make dashboard`) provides:
-
-- **Pipeline Overview** - Step status, timing, output files per run
-- **Quality Deep-Dive** - Judge score distributions, difficulty breakdown, contamination results
-- **Training Results** - Base vs fine-tuned comparison with delta charts and significance
-- **Experiment Comparison** - Multi-run metric comparison table
-- **Dataset Explorer** - Browse, filter, search, and curate individual examples
-
-## Development
+Provide your own independent benchmark file. Each JSONL record should contain text in a supported field such as `question`, `text`, `input`, or `context`.
 
 ```bash
-make lint        # Ruff linting
-make format      # Auto-format
-make typecheck   # mypy
-make test        # pytest
-make coverage    # pytest with coverage report
+export OPENAI_API_KEY="your-key"
+export FORGE_BENCHMARK_FILE="/absolute/path/to/independent_eval.jsonl"
+make forge-live
 ```
 
-## Results
+The live command fails if the benchmark is absent, cannot be loaded, or triggers the contamination threshold. Fine-tuning uses MLX and therefore requires compatible Apple Silicon for the current local path.
 
-From a real pipeline run on ML/AI technical documents (200 examples, 4 task types):
+## Source-safe split
 
-**Data Quality (LLM-as-Judge, GPT-4.1-mini):**
-- Average score: **4.77/5.0** across 4 dimensions (faithfulness, helpfulness, complexity, coherence)
-- 86% scored 5/5, 14% scored 4/5, 0% below 4/5
-- Only 2 quality flags (short_output) out of 200 examples
-- 0 duplicates detected
+The split command groups records by `document_id`. It refuses rows without source provenance and refuses datasets with fewer than two unique sources.
 
-**Fine-Tuning (LoRA on Qwen 2.5 0.5B, Apple Silicon MLX):**
+```bash
+python scripts/split_dataset.py \
+  --input run/dataset.jsonl \
+  --train-output run/train.jsonl \
+  --test-output run/test.jsonl \
+  --manifest-output run/split_manifest.json \
+  --test-fraction 0.2 \
+  --seed 42
+```
 
-| Metric | Base Model | Fine-Tuned | Delta |
-|--------|-----------|------------|-------|
-| ROUGE-1 | 0.418 | 0.586 | **+16.8%** |
-| ROUGE-2 | 0.185 | 0.311 | **+12.7%** |
-| ROUGE-L | 0.289 | 0.417 | **+12.9%** |
-| Statistical significance | — | — | **p=0.0** |
+The command verifies that neither `document_id` nor available `chunk_id` values cross partitions.
 
-Training: 120 iterations, 5 minutes, val loss 2.345 → 0.730 (69% reduction). 0.594% of parameters trained (2.9M/494M).
+## Evaluation semantics
 
-## Cost
+The benchmark harness compares paired predictions with the same references and reports:
 
-| Component | Cost |
-|-----------|------|
-| Generation (200 examples, 4 task types) | ~$3-8 |
-| LLM-as-Judge (200 examples x 4 dimensions) | ~$1-2 |
-| Embedding dedup + diversity | ~$0.02 |
-| MLX fine-tuning (local Apple Silicon) | $0 |
-| **Total per run** | **~$5-10** |
+- ROUGE-1, ROUGE-2, and ROUGE-L
+- exact match
+- paired mean deltas
+- a one-sided paired randomization p-value with plus-one correction
+- a 95 percent paired bootstrap interval for the ROUGE-L delta
+- the seed and resample count used by each procedure
 
-## Limitations
+These statistics quantify uncertainty in a particular evaluation set. They do not establish general model quality, remove judge bias, or substitute for an independently constructed benchmark.
 
-- **Fine-tuning** requires Apple Silicon (M1+) for MLX. Falls back to OpenAI fine-tuning API otherwise.
-- **Contamination detection** uses n-gram overlap. It will not catch paraphrased benchmark leakage.
-- **LLM-as-judge** scores correlate with but do not replace human evaluation.
-- **Small model fine-tuning** (0.5B) shows proof-of-concept improvement. Production would use larger models.
-- **Generation quality** depends heavily on source document quality and chunk boundaries.
+## Repository layout
+
+```text
+src/training_data_robo/
+  models.py          Stable document, chunk, and example provenance
+  bot.py             High-level orchestration
+  quality.py         Deterministic quality checks
+  contamination.py   N-gram overlap detection
+  judge.py           Rubric-based model judging
+  selector.py        Quality, diversity, balance, and curriculum selection
+  pipeline.py        DAG execution, caching, and resume
+
+scripts/
+  run_forge.py            End-to-end pipeline entry point
+  split_dataset.py        Source-grouped train and test split
+  check_contamination.py  Benchmark overlap gate
+  benchmark.py            Paired model comparison and uncertainty
+  finetune_mlx.py         Local LoRA fine-tuning
+
+tests/                    Unit, property, provenance, and integrity tests
+sample_docs/              Public smoke-test source documents
+sample_benchmarks/        Synthetic contamination mechanism fixture
+```
+
+## Development checks
+
+```bash
+make lint
+make typecheck
+make test
+make coverage
+```
+
+CI runs linting, format checks, type checking, syntax compilation, tests, and a coverage threshold on every push and pull request.
+
+## Known limitations
+
+- N-gram contamination detects verbatim and near-verbatim phrase overlap. It does not reliably catch paraphrases or semantic leakage.
+- The current judge is model-based. A human-reviewed subset is still required before publishing evaluation claims.
+- Exact-hash deduplication does not remove semantic duplicates. Stronger near-duplicate controls are planned.
+- The included smoke benchmark is synthetic and deliberately small.
+- The current local fine-tuning path is MLX-specific.
+
+## Release criteria
+
+Forge will be presented as evaluation-ready only after all of the following are public and reproducible:
+
+1. An independently authored evaluation set with documented provenance.
+2. A human-reviewed subset and an explicit scoring protocol.
+3. Multiple training seeds or an equivalent uncertainty analysis for the selected experiment.
+4. A clean one-command run from a fresh checkout.
+5. CI passing on the tagged release.
 
 ## License
 

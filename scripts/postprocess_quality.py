@@ -104,9 +104,7 @@ def score_example(row: Dict[str, Any]) -> Tuple[List[str], float]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Add quality_flags and quality_score to a JSONL dataset."
-    )
+    parser = argparse.ArgumentParser(description="Add quality_flags and quality_score to a JSONL dataset.")
     parser.add_argument(
         "--input",
         type=str,

@@ -1,4 +1,5 @@
 """Tests for LLM-as-Judge module."""
+
 from __future__ import annotations
 
 import asyncio
@@ -83,11 +84,13 @@ class TestDummyJudge:
         assert "faithfulness" in d["verdicts"]
 
     def test_custom_rubric(self):
-        rubric = JudgeRubric(dimensions=[
-            __import__("training_data_robo.models", fromlist=["QualityDimension"]).QualityDimension(
-                name="test_dim", description="Test dimension"
-            )
-        ])
+        rubric = JudgeRubric(
+            dimensions=[
+                __import__("training_data_robo.models", fromlist=["QualityDimension"]).QualityDimension(
+                    name="test_dim", description="Test dimension"
+                )
+            ]
+        )
         judge = DummyJudge(rubric=rubric)
         result = asyncio.run(judge.judge_example(_make_example()))
         assert len(result.verdicts) == 1

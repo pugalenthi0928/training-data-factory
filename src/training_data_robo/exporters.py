@@ -42,7 +42,7 @@ def export_finetune(
         system_content = f"You are a helpful assistant. Task: {task_name}".strip()
 
         if fmt == "chat":
-            ft_example = {
+            ft_example: Dict[str, Any] = {
                 "messages": [
                     {"role": "system", "content": system_content},
                     {"role": "user", "content": inp},

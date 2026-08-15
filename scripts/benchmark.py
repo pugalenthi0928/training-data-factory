@@ -7,8 +7,10 @@ and produces a comparison report with deltas.
 Supports:
   - MLX local models (base + LoRA adapters)
   - OpenAI API models
-  - Paired bootstrap significance testing
+  - Paired randomization testing
+  - Paired bootstrap confidence intervals
 """
+
 from __future__ import annotations
 
 import argparse
@@ -53,34 +55,92 @@ def _compute_exact_match(predictions: List[str], references: List[str]) -> float
     return round(matches / len(predictions), 4)
 
 
-def _paired_bootstrap(
+def _paired_randomization_test(
     scores_a: List[float],
     scores_b: List[float],
-    n_bootstrap: int = 1000,
+    n_resamples: int = 1000,
     seed: int = 42,
 ) -> Dict[str, Any]:
-    """Paired bootstrap test: is model B better than model A?"""
+    """One-sided paired randomization test for whether B exceeds A."""
+    if len(scores_a) != len(scores_b):
+        raise ValueError("Paired score lists must have equal length")
+    if n_resamples < 1:
+        raise ValueError("n_resamples must be positive")
+
     rng = random.Random(seed)
     n = len(scores_a)
     if n == 0:
-        return {"p_value": 1.0, "significant": False, "n_bootstrap": n_bootstrap}
+        return {
+            "method": "paired_randomization_one_sided",
+            "p_value": 1.0,
+            "significant": False,
+            "n_resamples": n_resamples,
+            "seed": seed,
+        }
 
     diffs = [b - a for a, b in zip(scores_a, scores_b)]
     observed_delta = sum(diffs) / n
 
     # Null hypothesis: no difference. Randomly flip signs of diffs.
     count_as_extreme = 0
-    for _ in range(n_bootstrap):
+    for _ in range(n_resamples):
         shuffled = sum(d * rng.choice([-1, 1]) for d in diffs) / n
         if shuffled >= observed_delta:
             count_as_extreme += 1
 
-    p_value = count_as_extreme / n_bootstrap
+    # Plus-one correction prevents reporting an impossible p-value of exactly 0.
+    p_value = (count_as_extreme + 1) / (n_resamples + 1)
     return {
+        "method": "paired_randomization_one_sided",
         "observed_delta": round(observed_delta, 4),
-        "p_value": round(p_value, 4),
+        "p_value": p_value,
         "significant": p_value < 0.05,
-        "n_bootstrap": n_bootstrap,
+        "n_resamples": n_resamples,
+        "seed": seed,
+    }
+
+
+def _paired_bootstrap_ci(
+    scores_a: List[float],
+    scores_b: List[float],
+    n_resamples: int = 1000,
+    confidence: float = 0.95,
+    seed: int = 42,
+) -> Dict[str, Any]:
+    """Percentile bootstrap confidence interval for the paired mean delta."""
+    if len(scores_a) != len(scores_b):
+        raise ValueError("Paired score lists must have equal length")
+    if n_resamples < 1:
+        raise ValueError("n_resamples must be positive")
+    if not 0.0 < confidence < 1.0:
+        raise ValueError("confidence must be between 0 and 1")
+    if not scores_a:
+        return {
+            "method": "paired_percentile_bootstrap",
+            "confidence": confidence,
+            "lower": None,
+            "upper": None,
+            "n_resamples": n_resamples,
+            "seed": seed,
+        }
+
+    rng = random.Random(seed)
+    diffs = [b - a for a, b in zip(scores_a, scores_b)]
+    n = len(diffs)
+    sampled_means = sorted(sum(diffs[rng.randrange(n)] for _ in range(n)) / n for _ in range(n_resamples))
+    alpha = 1.0 - confidence
+    lower_index = max(0, int((alpha / 2.0) * n_resamples))
+    upper_index = min(
+        n_resamples - 1,
+        int((1.0 - alpha / 2.0) * n_resamples) - 1,
+    )
+    return {
+        "method": "paired_percentile_bootstrap",
+        "confidence": confidence,
+        "lower": round(sampled_means[lower_index], 4),
+        "upper": round(sampled_means[upper_index], 4),
+        "n_resamples": n_resamples,
+        "seed": seed,
     }
 
 
@@ -120,6 +180,7 @@ def generate_predictions_openai(
 ) -> List[str]:
     """Generate predictions using OpenAI API."""
     from openai import OpenAI
+
     client = OpenAI()
 
     predictions = []
@@ -207,6 +268,7 @@ def run_benchmark(args: argparse.Namespace) -> Dict[str, Any]:
         ft_rl_scores = []
         try:
             from rouge_score import rouge_scorer
+
             scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
             for bp, fp, ref in zip(base_preds, ft_preds, references):
                 base_rl_scores.append(scorer.score(ref, bp)["rougeL"].fmeasure)
@@ -214,11 +276,27 @@ def run_benchmark(args: argparse.Namespace) -> Dict[str, Any]:
         except ImportError:
             pass
 
-        significance = _paired_bootstrap(base_rl_scores, ft_rl_scores) if base_rl_scores else {}
+        if base_rl_scores:
+            significance = _paired_randomization_test(
+                base_rl_scores,
+                ft_rl_scores,
+                n_resamples=args.resamples,
+                seed=args.seed,
+            )
+            confidence_interval = _paired_bootstrap_ci(
+                base_rl_scores,
+                ft_rl_scores,
+                n_resamples=args.resamples,
+                seed=args.seed,
+            )
+        else:
+            significance = {}
+            confidence_interval = {}
 
         results["comparison"] = {
             "delta": delta,
             "significance": significance,
+            "rougeL_delta_confidence_interval": confidence_interval,
         }
 
         print("\n=== Comparison ===")
@@ -248,6 +326,8 @@ def main() -> None:
     ap.add_argument("--backend", choices=["mlx", "openai"], default="mlx", help="Inference backend")
     ap.add_argument("--max-tokens", type=int, default=256, help="Max generation tokens")
     ap.add_argument("--max-examples", type=int, default=None, help="Limit test examples")
+    ap.add_argument("--resamples", type=int, default=5000, help="Statistical resamples")
+    ap.add_argument("--seed", type=int, default=42, help="Statistical random seed")
     ap.add_argument("--output", default=None, help="Output path for comparison JSON")
     args = ap.parse_args()
 

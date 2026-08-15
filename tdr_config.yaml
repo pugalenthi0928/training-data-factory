@@ -1,4 +1,4 @@
-# Training Data Robo config – pipeline defaults and profiles
+# Forge config - pipeline defaults and profiles
 
 defaults:
   model: gpt-4.1-mini

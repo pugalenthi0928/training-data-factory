@@ -12,6 +12,7 @@ Usage:
         --model Qwen/Qwen2.5-0.5B-Instruct \
         --epochs 3
 """
+
 from __future__ import annotations
 
 import argparse
@@ -36,12 +37,14 @@ def jsonl_to_chat_format(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         output_text = str(row.get("output_text", ""))
         if not input_text or not output_text:
             continue
-        chat_rows.append({
-            "messages": [
-                {"role": "user", "content": input_text},
-                {"role": "assistant", "content": output_text},
-            ]
-        })
+        chat_rows.append(
+            {
+                "messages": [
+                    {"role": "user", "content": input_text},
+                    {"role": "assistant", "content": output_text},
+                ]
+            }
+        )
     return chat_rows
 
 
@@ -104,16 +107,25 @@ def run_finetune(args: argparse.Namespace) -> Dict[str, Any]:
     # Build LoRA training args
     num_iters = args.epochs * max(1, len(train_chat) // args.batch_size)
     lora_args = [
-        "--model", args.model,
-        "--data", str(data_dir),
+        "--model",
+        args.model,
+        "--data",
+        str(data_dir),
         "--train",
-        "--adapter-path", str(output_dir / "adapters"),
-        "--iters", str(num_iters),
-        "--batch-size", str(args.batch_size),
-        "--num-layers", str(args.lora_layers),
-        "--learning-rate", str(args.learning_rate),
-        "--steps-per-report", "5",
-        "--save-every", str(max(10, num_iters // 3)),
+        "--adapter-path",
+        str(output_dir / "adapters"),
+        "--iters",
+        str(num_iters),
+        "--batch-size",
+        str(args.batch_size),
+        "--num-layers",
+        str(args.lora_layers),
+        "--learning-rate",
+        str(args.learning_rate),
+        "--steps-per-report",
+        "5",
+        "--save-every",
+        str(max(10, num_iters // 3)),
     ]
 
     if test_chat:

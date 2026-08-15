@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """CLI wrapper for LLM-as-Judge scoring."""
+
 from __future__ import annotations
 
 import argparse

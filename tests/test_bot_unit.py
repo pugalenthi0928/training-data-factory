@@ -1,4 +1,5 @@
 """Unit tests for TrainingDataBot internals."""
+
 from __future__ import annotations
 
 from training_data_robo.bot import TrainingDataBot
@@ -58,7 +59,9 @@ class TestFilterAndDedup:
         bot = TrainingDataBot()
         examples = [
             _make_example(task_name="qa_v1", output_text="A detailed answer about question answering and its methods."),
-            _make_example(task_name="summary_v1", output_text="A detailed answer about question answering and its methods."),
+            _make_example(
+                task_name="summary_v1", output_text="A detailed answer about question answering and its methods."
+            ),
         ]
         result = bot._filter_and_dedup_examples(examples)
         assert len(result) == 2
@@ -66,8 +69,12 @@ class TestFilterAndDedup:
     def test_keeps_different_inputs(self) -> None:
         bot = TrainingDataBot()
         examples = [
-            _make_example(input_text="Question A?", output_text="Answer to question A with enough detail to pass filter."),
-            _make_example(input_text="Question B?", output_text="Answer to question B with enough detail to pass filter."),
+            _make_example(
+                input_text="Question A?", output_text="Answer to question A with enough detail to pass filter."
+            ),
+            _make_example(
+                input_text="Question B?", output_text="Answer to question B with enough detail to pass filter."
+            ),
         ]
         result = bot._filter_and_dedup_examples(examples)
         assert len(result) == 2

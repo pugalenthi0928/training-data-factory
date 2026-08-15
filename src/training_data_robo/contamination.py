@@ -2,10 +2,11 @@
 
 Checks training examples for text overlap with popular evaluation benchmarks
 (MMLU, ARC, HellaSwag) using 8-gram and 13-gram matching. This is a pure
-string-matching approach — zero API cost.
+string-matching approach with zero API cost.
 
 Benchmark data is downloaded on first use and cached in .cache/benchmarks/.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -35,7 +36,7 @@ def _build_ngrams(tokens: List[str], n: int) -> Set[str]:
     """Build a set of n-gram strings from a token list."""
     if len(tokens) < n:
         return set()
-    return {" ".join(tokens[i:i + n]) for i in range(len(tokens) - n + 1)}
+    return {" ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)}
 
 
 class BenchmarkIndex:
@@ -90,6 +91,7 @@ def _download_benchmark(name: str, url: str, cache_dir: Path) -> Path:
 
     logger.info("Downloading benchmark %s from %s ...", name, url)
     import requests
+
     resp = requests.get(url, timeout=60)
     resp.raise_for_status()
     cached.write_bytes(resp.content)

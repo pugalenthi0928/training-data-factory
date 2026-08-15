@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """CLI wrapper for difficulty calibration."""
+
 from __future__ import annotations
 
 import argparse

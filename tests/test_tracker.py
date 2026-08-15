@@ -1,4 +1,5 @@
 """Tests for experiment tracker."""
+
 from __future__ import annotations
 
 import json

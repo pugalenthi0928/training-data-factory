@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+
+def _stable_content_id(prefix: str, *parts: object) -> str:
+    """Return a deterministic identifier for provenance-bearing content."""
+    normalized_parts = [" ".join(str(part).split()) for part in parts]
+    payload = "\x00".join(normalized_parts).encode("utf-8")
+    return f"{prefix}_{hashlib.sha256(payload).hexdigest()}"
 
 
 class DocumentSource(str, Enum):
@@ -30,10 +38,8 @@ class Document:
         title: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> "Document":
-        from uuid import uuid4
-
         return cls(
-            id=str(uuid4()),
+            id=_stable_content_id("doc", content),
             title=title or path,
             content=content,
             source=DocumentSource.FILE,
@@ -49,10 +55,8 @@ class Document:
         title: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> "Document":
-        from uuid import uuid4
-
         return cls(
-            id=str(uuid4()),
+            id=_stable_content_id("doc", content),
             title=title or url,
             content=content,
             source=DocumentSource.URL,
@@ -67,10 +71,8 @@ class Document:
         title: str = "Untitled",
         metadata: Optional[Dict[str, Any]] = None,
     ) -> "Document":
-        from uuid import uuid4
-
         return cls(
-            id=str(uuid4()),
+            id=_stable_content_id("doc", content),
             title=title,
             content=content,
             source=DocumentSource.TEXT,
@@ -94,10 +96,8 @@ class TextChunk:
         index: int,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> "TextChunk":
-        from uuid import uuid4
-
         return cls(
-            id=str(uuid4()),
+            id=_stable_content_id("chunk", document.id, index, text),
             document_id=document.id,
             index=index,
             text=text,
@@ -138,24 +138,26 @@ class QualityDimension:
 
 @dataclass
 class JudgeRubric:
-    dimensions: List[QualityDimension] = field(default_factory=lambda: [
-        QualityDimension(
-            name="faithfulness",
-            description="Output is factually consistent with the source text.",
-        ),
-        QualityDimension(
-            name="helpfulness",
-            description="Output would be useful for training a model on this task.",
-        ),
-        QualityDimension(
-            name="complexity",
-            description="Question/instruction requires non-trivial reasoning.",
-        ),
-        QualityDimension(
-            name="coherence",
-            description="Output is well-structured, grammatical, and flows logically.",
-        ),
-    ])
+    dimensions: List[QualityDimension] = field(
+        default_factory=lambda: [
+            QualityDimension(
+                name="faithfulness",
+                description="Output is factually consistent with the source text.",
+            ),
+            QualityDimension(
+                name="helpfulness",
+                description="Output would be useful for training a model on this task.",
+            ),
+            QualityDimension(
+                name="complexity",
+                description="Question/instruction requires non-trivial reasoning.",
+            ),
+            QualityDimension(
+                name="coherence",
+                description="Output is well-structured, grammatical, and flows logically.",
+            ),
+        ]
+    )
 
 
 @dataclass
@@ -186,7 +188,7 @@ class TrainingExample:
     # New metadata fields
     model_name: str = "unknown"
     task_version: str = "v1"
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     temperature: float = 0.2
 
 
@@ -224,7 +226,7 @@ def new_dataset(name: str, metadata: Optional[Dict[str, Any]] = None) -> Dataset
     return Dataset(
         id=str(uuid4()),
         name=name,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         metadata=metadata or {},
     )
 
@@ -236,7 +238,7 @@ def new_job(
 ) -> ProcessingJob:
     from uuid import uuid4
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return ProcessingJob(
         id=str(uuid4()),
         status=ProcessingStatus.PENDING,

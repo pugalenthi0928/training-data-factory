@@ -2,9 +2,10 @@
 
 Given a TextChunk with structure-aware metadata (chunk_type, section_title, etc.),
 select the most appropriate subset of task templates to apply. This avoids wasting
-LLM calls on tasks that don't make sense for a given chunk type — e.g., asking for
+LLM calls on tasks that do not make sense for a given chunk type, such as asking for
 a summary of a 3-row table, or key-points extraction from a title-only chunk.
 """
+
 from __future__ import annotations
 
 from typing import Dict, List, Sequence
@@ -71,7 +72,7 @@ def select_tasks_for_chunk(
     if chunk_type and chunk_type in _CHUNK_TYPE_TASKS:
         allowed_types = set(_CHUNK_TYPE_TASKS[chunk_type])
     else:
-        # No structure metadata — allow everything
+        # No structure metadata, so allow every task.
         allowed_types = set(TaskType)
 
     selected: List[TaskTemplate] = []

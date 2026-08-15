@@ -1,4 +1,5 @@
 """Tests for DAG pipeline runner."""
+
 from __future__ import annotations
 
 import json
@@ -68,8 +69,7 @@ class TestTopologicalSort:
 class TestPipelineRun:
     def test_simple_pipeline(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("write_a", _step_write, outputs=["out.txt"],
-                       filename="out.txt", content="hello")
+        pipe.add_step("write_a", _step_write, outputs=["out.txt"], filename="out.txt", content="hello")
         results = pipe.run(resume=False)
         assert len(results) == 1
         assert results[0].status == "ok"
@@ -77,10 +77,8 @@ class TestPipelineRun:
 
     def test_multi_step_pipeline(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("step1", _step_append, outputs=["log.txt"],
-                       filename="log.txt", text="A")
-        pipe.add_step("step2", _step_append, depends_on=["step1"],
-                       outputs=["log.txt"], filename="log.txt", text="B")
+        pipe.add_step("step1", _step_append, outputs=["log.txt"], filename="log.txt", text="A")
+        pipe.add_step("step2", _step_append, depends_on=["step1"], outputs=["log.txt"], filename="log.txt", text="B")
         results = pipe.run(resume=False)
         assert len(results) == 2
         assert all(r.status == "ok" for r in results)
@@ -88,8 +86,7 @@ class TestPipelineRun:
 
     def test_failure_stops_pipeline(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("step1", _step_write, outputs=["out.txt"],
-                       filename="out.txt", content="ok")
+        pipe.add_step("step1", _step_write, outputs=["out.txt"], filename="out.txt", content="ok")
         pipe.add_step("step2", _step_fail, depends_on=["step1"])
         with pytest.raises(PipelineError, match="step2"):
             pipe.run(resume=False)
@@ -98,8 +95,7 @@ class TestPipelineRun:
 
     def test_failure_saves_checkpoint(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("good", _step_write, outputs=["out.txt"],
-                       filename="out.txt", content="ok")
+        pipe.add_step("good", _step_write, outputs=["out.txt"], filename="out.txt", content="ok")
         pipe.add_step("bad", _step_fail, depends_on=["good"])
         with pytest.raises(PipelineError):
             pipe.run(resume=False)
@@ -111,8 +107,7 @@ class TestPipelineRun:
 
     def test_pipeline_log_saved(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("step1", _step_write, outputs=["out.txt"],
-                       filename="out.txt", content="ok")
+        pipe.add_step("step1", _step_write, outputs=["out.txt"], filename="out.txt", content="ok")
         pipe.run(resume=False)
         log = json.loads(pipe.log_path.read_text())
         assert len(log) == 1
@@ -121,8 +116,7 @@ class TestPipelineRun:
 
     def test_elapsed_time_recorded(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("step1", _step_write, outputs=["out.txt"],
-                       filename="out.txt", content="ok")
+        pipe.add_step("step1", _step_write, outputs=["out.txt"], filename="out.txt", content="ok")
         results = pipe.run(resume=False)
         assert results[0].elapsed_seconds >= 0
 
@@ -131,15 +125,13 @@ class TestCaching:
     def test_cache_skips_unchanged(self, tmp_path: Path) -> None:
         # First run
         pipe = Pipeline(tmp_path, cache_enabled=True)
-        pipe.add_step("step1", _step_append, outputs=["log.txt"],
-                       inputs=[], filename="log.txt", text="A")
+        pipe.add_step("step1", _step_append, outputs=["log.txt"], inputs=[], filename="log.txt", text="A")
         pipe.run(resume=False)
         assert (tmp_path / "log.txt").read_text() == "A"
 
-        # Second run — should be cached
+        # Second run should be cached
         pipe2 = Pipeline(tmp_path, cache_enabled=True)
-        pipe2.add_step("step1", _step_append, outputs=["log.txt"],
-                        inputs=[], filename="log.txt", text="A")
+        pipe2.add_step("step1", _step_append, outputs=["log.txt"], inputs=[], filename="log.txt", text="A")
         results = pipe2.run(resume=False)
         assert results[0].status == "cached"
         # File should NOT have been appended to again
@@ -150,23 +142,20 @@ class TestCaching:
         (tmp_path / "input.txt").write_text("v1", encoding="utf-8")
 
         pipe = Pipeline(tmp_path, cache_enabled=True)
-        pipe.add_step("step1", _step_append, outputs=["log.txt"],
-                       inputs=["input.txt"], filename="log.txt", text="A")
+        pipe.add_step("step1", _step_append, outputs=["log.txt"], inputs=["input.txt"], filename="log.txt", text="A")
         pipe.run(resume=False)
 
         # Change input
         (tmp_path / "input.txt").write_text("v2", encoding="utf-8")
 
         pipe2 = Pipeline(tmp_path, cache_enabled=True)
-        pipe2.add_step("step1", _step_append, outputs=["log.txt"],
-                        inputs=["input.txt"], filename="log.txt", text="B")
+        pipe2.add_step("step1", _step_append, outputs=["log.txt"], inputs=["input.txt"], filename="log.txt", text="B")
         results = pipe2.run(resume=False)
         assert results[0].status == "ok"  # Re-executed due to input change
 
     def test_clear_cache(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=True)
-        pipe.add_step("step1", _step_write, outputs=["out.txt"],
-                       filename="out.txt", content="ok")
+        pipe.add_step("step1", _step_write, outputs=["out.txt"], filename="out.txt", content="ok")
         pipe.run(resume=False)
 
         # Cache file should exist
@@ -180,18 +169,17 @@ class TestResume:
     def test_resume_skips_completed(self, tmp_path: Path) -> None:
         # First run: step1 succeeds, step2 fails
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("step1", _step_append, outputs=["log.txt"],
-                       filename="log.txt", text="A")
+        pipe.add_step("step1", _step_append, outputs=["log.txt"], filename="log.txt", text="A")
         pipe.add_step("step2", _step_fail, depends_on=["step1"])
         with pytest.raises(PipelineError):
             pipe.run(resume=False)
 
         # Resume: step1 should be skipped, step2 re-executed
         pipe2 = Pipeline(tmp_path, cache_enabled=False)
-        pipe2.add_step("step1", _step_append, outputs=["log.txt"],
-                        filename="log.txt", text="A")
-        pipe2.add_step("step2", _step_write, depends_on=["step1"],
-                        outputs=["out2.txt"], filename="out2.txt", content="ok")
+        pipe2.add_step("step1", _step_append, outputs=["log.txt"], filename="log.txt", text="A")
+        pipe2.add_step(
+            "step2", _step_write, depends_on=["step1"], outputs=["out2.txt"], filename="out2.txt", content="ok"
+        )
         results = pipe2.run(resume=True)
         assert results[0].status == "skipped"
         assert results[1].status == "ok"
@@ -216,8 +204,7 @@ class TestEdgeCases:
 
     def test_get_results(self, tmp_path: Path) -> None:
         pipe = Pipeline(tmp_path, cache_enabled=False)
-        pipe.add_step("step1", _step_write, outputs=["out.txt"],
-                       filename="out.txt", content="ok")
+        pipe.add_step("step1", _step_write, outputs=["out.txt"], filename="out.txt", content="ok")
         pipe.run(resume=False)
         results = pipe.get_results()
         assert len(results) == 1

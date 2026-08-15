@@ -1,4 +1,5 @@
 """Tests for diversity scoring module."""
+
 from __future__ import annotations
 
 from training_data_robo.diversity import compute_diversity_metrics
@@ -14,11 +15,13 @@ def _make_examples(n: int, varied: bool = True) -> list:
         else:
             text = "The same exact answer repeated verbatim for every single example"
             task = "qa_v1"
-        examples.append({
-            "id": str(i),
-            "task_name": task,
-            "output_text": text,
-        })
+        examples.append(
+            {
+                "id": str(i),
+                "task_name": task,
+                "output_text": text,
+            }
+        )
     return examples
 
 

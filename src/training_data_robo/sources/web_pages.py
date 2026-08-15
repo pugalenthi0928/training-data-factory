@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable, List
+from pathlib import Path
+from typing import Iterable, List, Union
 
 import requests
 
@@ -22,10 +23,11 @@ class WebPageLoader(BaseLoader):
 
     async def load_documents(
         self,
-        sources: Iterable[str],
+        sources: Iterable[Union[str, Path]],
     ) -> List[Document]:
         docs: List[Document] = []
-        for url in sources:
+        for source in sources:
+            url = str(source)
             try:
                 resp = requests.get(url, timeout=self.timeout)
                 resp.raise_for_status()

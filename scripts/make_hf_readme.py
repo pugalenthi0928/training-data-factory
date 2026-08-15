@@ -37,13 +37,13 @@ size_categories:
 
 # Papers QA (deduped)
 
-**Rows:** {rec['counts']['rows']} (raw: {rec['counts']['raw_rows']}, dedupe dropped: {rec['counts']['dedupe_dropped']})
-**Model used for eval:** `{rec['model']}`
-**Eval (n={metrics['num_eval_examples']}):**
-- ROUGE-1 F: {metrics['rouge1_f']:.3f}
-- ROUGE-2 F: {metrics['rouge2_f']:.3f}
-- ROUGE-L F: {metrics['rougeL_f']:.3f}
-- Exact Match: {metrics['exact_match']:.3f}
+**Rows:** {rec["counts"]["rows"]} (raw: {rec["counts"]["raw_rows"]}, dedupe dropped: {rec["counts"]["dedupe_dropped"]})
+**Model used for eval:** `{rec["model"]}`
+**Eval (n={metrics["num_eval_examples"]}):**
+- ROUGE-1 F: {metrics["rouge1_f"]:.3f}
+- ROUGE-2 F: {metrics["rouge2_f"]:.3f}
+- ROUGE-L F: {metrics["rougeL_f"]:.3f}
+- Exact Match: {metrics["exact_match"]:.3f}
 
 **Files**
 - `papers_qa_only_real_gpt4_deduped.jsonl`
@@ -62,6 +62,7 @@ print(len(ds), ds[0])
 """
     Path(args.out).write_text(readme, encoding="utf-8")
     print(f"Wrote {args.out}")
+
 
 if __name__ == "__main__":
     main()

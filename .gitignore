@@ -20,6 +20,9 @@ myenv/
 # Tools
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
 
 # Project outputs
 output/

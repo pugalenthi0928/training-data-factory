@@ -77,9 +77,7 @@ def build_tdr_command(cfg: Dict[str, Any], profile_name: str) -> List[str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Run Training Data Robo (tdr) using a YAML profile."
-    )
+    parser = argparse.ArgumentParser(description="Run Training Data Robo (tdr) using a YAML profile.")
     parser.add_argument(
         "--config",
         type=str,

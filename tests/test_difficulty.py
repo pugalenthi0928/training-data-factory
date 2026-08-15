@@ -1,4 +1,5 @@
 """Tests for difficulty calibration module."""
+
 from __future__ import annotations
 
 from training_data_robo.difficulty import calibrate_batch, calibrate_difficulty
@@ -61,7 +62,11 @@ class TestCalibrateBatch:
     def test_batch(self):
         examples = [
             {"id": "1", "input_text": "Q", "output_text": "Short."},
-            {"id": "2", "input_text": "Compare X", "output_text": "A" * 600 + " therefore because furthermore step 1 step 2"},
+            {
+                "id": "2",
+                "input_text": "Compare X",
+                "output_text": "A" * 600 + " therefore because furthermore step 1 step 2",
+            },
         ]
         summary = calibrate_batch(examples)
         assert summary["total"] == 2

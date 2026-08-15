@@ -15,6 +15,7 @@ from training_data_robo.io import load_jsonl, write_jsonl
 def norm(s: Optional[str]) -> str:
     return (s or "").strip()
 
+
 def call_openai_chat(prompt: str, model: str, retries: int = 3, sleep_s: float = 1.5) -> str:
     try:
         from openai import OpenAI  # OpenAI SDK v1.x
@@ -31,7 +32,10 @@ def call_openai_chat(prompt: str, model: str, retries: int = 3, sleep_s: float =
             r = client.chat.completions.create(
                 model=model,
                 messages=[
-                    {"role": "system", "content": "Answer concisely using ONLY the provided CONTEXT. If the answer is not in CONTEXT, reply exactly 'Unknown'."},
+                    {
+                        "role": "system",
+                        "content": "Answer concisely using ONLY the provided CONTEXT. If the answer is not in CONTEXT, reply exactly 'Unknown'.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0,
@@ -42,6 +46,7 @@ def call_openai_chat(prompt: str, model: str, retries: int = 3, sleep_s: float =
             time.sleep(sleep_s)
     raise RuntimeError(f"OpenAI call failed after {retries} retries: {last_err}")
 
+
 def fake_predict(question: str, context: str, answer: str) -> str:
     # Deterministic, test-friendly predictor:
     a = norm(answer)
@@ -50,8 +55,10 @@ def fake_predict(question: str, context: str, answer: str) -> str:
         return a
     return "Unknown"
 
+
 def build_prompt(question: str, context: str) -> str:
     return f"CONTEXT:\n{context}\n\nQUESTION:\n{question}\n\nAnswer:"
+
 
 def extract_question(row: Dict[str, Any]) -> str:
     # Prefer explicit question
@@ -69,11 +76,12 @@ def extract_question(row: Dict[str, Any]) -> str:
         if q:
             return q
     # If it's a QA task_name but author only stored input_text as the question
-    if "qa" in str(row.get("task_name","")).lower() and not norm(row.get("context")):
+    if "qa" in str(row.get("task_name", "")).lower() and not norm(row.get("context")):
         q = norm(row.get("input_text"))
         if q:
             return q
     return ""
+
 
 def extract_context(row: Dict[str, Any]) -> str:
     c = norm(row.get("context"))
@@ -82,11 +90,13 @@ def extract_context(row: Dict[str, Any]) -> str:
     # Fall back to input_text for RAG-like rows
     return norm(row.get("input_text"))
 
+
 def extract_answer(row: Dict[str, Any]) -> str:
     a = norm(row.get("answer"))
     if a:
         return a
     return norm(row.get("output_text"))
+
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Generate QA predictions for evaluation.")
@@ -94,7 +104,9 @@ def main() -> None:
     ap.add_argument("--output", required=True, help="Output JSONL with added 'prediction'.")
     ap.add_argument("--model", default="gpt-4.1-mini", help="OpenAI chat model when not using --fake-model.")
     ap.add_argument("--max-examples", type=int, default=None, help="Optional cap on examples.")
-    ap.add_argument("--fake-model", dest="fake_model", action="store_true", help="Use offline fake model (no API calls).")
+    ap.add_argument(
+        "--fake-model", dest="fake_model", action="store_true", help="Use offline fake model (no API calls)."
+    )
     args = ap.parse_args()
 
     in_path = Path(args.input)
@@ -106,8 +118,8 @@ def main() -> None:
     # Keep rows that look QA-ish
     qaish: List[Dict[str, Any]] = []
     for r in rows:
-        tn = str(r.get("task_name","")).lower()
-        tt = str(r.get("task_type","")).lower()
+        tn = str(r.get("task_name", "")).lower()
+        tt = str(r.get("task_type", "")).lower()
         q = norm(r.get("question"))
         has_qa_signal = ("qa" in tn) or ("qa" in tt) or bool(q)
         if has_qa_signal:
@@ -121,8 +133,8 @@ def main() -> None:
     out_rows: List[Dict[str, Any]] = []
     for r in qaish:
         question = extract_question(r)
-        context  = extract_context(r)
-        answer   = extract_answer(r)
+        context = extract_context(r)
+        answer = extract_answer(r)
 
         if not question:
             # Still no question → skip this row
@@ -149,6 +161,7 @@ def main() -> None:
     }
     print("Prediction summary:")
     print(json.dumps(summary, indent=2, ensure_ascii=False))
+
 
 if __name__ == "__main__":
     main()

@@ -78,10 +78,7 @@ def compute_stats(df: pd.DataFrame) -> Dict[str, Any]:
     avg_input_len = float(df["input_length"].mean()) if num_examples > 0 else 0.0
     avg_output_len = float(df["output_length"].mean()) if num_examples > 0 else 0.0
 
-    per_task_counts = (
-        df["task_name"].value_counts()
-        .to_dict()
-    )
+    per_task_counts = df["task_name"].value_counts().to_dict()
 
     return {
         "num_examples": num_examples,
@@ -93,9 +90,7 @@ def compute_stats(df: pd.DataFrame) -> Dict[str, Any]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Compare multiple dataset JSONL files and summarise basic stats."
-    )
+    parser = argparse.ArgumentParser(description="Compare multiple dataset JSONL files and summarise basic stats.")
     parser.add_argument(
         "--inputs",
         nargs="+",

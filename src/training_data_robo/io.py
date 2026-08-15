@@ -1,4 +1,5 @@
 """Consolidated JSONL I/O utilities used across the entire project."""
+
 from __future__ import annotations
 
 import json

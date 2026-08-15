@@ -1,4 +1,5 @@
 """Tests for contamination detection module."""
+
 from __future__ import annotations
 
 import json
@@ -74,12 +75,19 @@ class TestBuildIndexFromTexts:
 class TestContaminationChecker:
     def test_check_dataset_clean(self):
         checker = ContaminationChecker()
-        checker.load_custom_texts([
-            "Alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo",
-        ], name="test_bench")
+        checker.load_custom_texts(
+            [
+                "Alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo",
+            ],
+            name="test_bench",
+        )
 
         examples = [
-            {"id": "1", "input_text": "What is X?", "output_text": "Something completely different and unique here today"},
+            {
+                "id": "1",
+                "input_text": "What is X?",
+                "output_text": "Something completely different and unique here today",
+            },
         ]
         report = checker.check_dataset(examples)
         assert report["total_examples"] == 1
@@ -102,8 +110,12 @@ class TestContaminationChecker:
 
     def test_load_benchmark_file(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
-            f.write(json.dumps({"question": "What is the capital of France and what is it known for historically"}) + "\n")
-            f.write(json.dumps({"question": "How does photosynthesis work in plants and what are the main stages"}) + "\n")
+            f.write(
+                json.dumps({"question": "What is the capital of France and what is it known for historically"}) + "\n"
+            )
+            f.write(
+                json.dumps({"question": "How does photosynthesis work in plants and what are the main stages"}) + "\n"
+            )
             tmp_path = Path(f.name)
 
         try:
