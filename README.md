@@ -8,7 +8,7 @@ Generate, screen and benchmark training datasets with source-aware splits, conta
 
 Forge turns documents into task-specific examples and then produces a verifiable dataset release. Every stage declares its inputs, outputs, configuration, model, prompt identity, and content-derived cache key. A run can resume after failure without trusting stale or modified artifacts.
 
-**[Explore the browser walkthrough](https://pugalenthi0928.github.io/training-data-factory/demo.html) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html) | [Engineering roadmap](docs/engineering-roadmap.md)**
+**[Run Forge live](https://training-data-factory-production.up.railway.app/) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html) | [Engineering roadmap](docs/engineering-roadmap.md)**
 
 The repository now includes a hosted FastAPI demonstration that invokes the real Python workflow, streams its 12-stage event trace, verifies the release, and serves an allowlisted evidence bundle. Public runs are deterministic smoke releases. They prove the declared controls execute, not that a model is production-ready.
 
@@ -72,6 +72,8 @@ make forge
 `make forge` is an offline smoke run. It uses the dummy model and a small synthetic contamination fixture to exercise the pipeline without API calls. The fixture tests the mechanism only. It is not a model benchmark.
 
 ## One-click hosted demonstration
+
+**[Launch the production demonstration](https://training-data-factory-production.up.railway.app/)**
 
 The hosted interface uses the same `forge.workflow.run_forge` function as the CLI and test suite. It does not accept file paths, URLs, uploads, model keys, or arbitrary pipeline settings. A public caller can choose a controlled preset or provide exactly two bounded text documents.
 
