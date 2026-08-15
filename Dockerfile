@@ -1,21 +1,25 @@
 FROM python:3.11-slim
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    FORGE_DATA_DIR=/var/lib/forge
+
 WORKDIR /app
 
-# System dependencies (optional but useful for some libs)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
- && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home --uid 10001 forge \
+    && mkdir -p /var/lib/forge \
+    && chown forge:forge /var/lib/forge
 
 COPY . /app
+RUN python -m pip install --upgrade pip \
+    && python -m pip install .
 
-# Install package and common deps
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -e . streamlit pandas altair pyyaml tqdm rouge-score
+USER forge
 
-ENV STREAMLIT_SERVER_PORT=8501
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+EXPOSE 8000
 
-EXPOSE 8501
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:' + __import__('os').environ.get('PORT', '8000') + '/health', timeout=2)"
 
-CMD ["streamlit", "run", "app.py"]
+CMD ["forge-web"]

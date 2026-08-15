@@ -8,9 +8,9 @@ Generate, screen and benchmark training datasets with source-aware splits, conta
 
 Forge turns documents into task-specific examples and then produces a verifiable dataset release. Every stage declares its inputs, outputs, configuration, model, prompt identity, and content-derived cache key. A run can resume after failure without trusting stale or modified artifacts.
 
-**[Run the browser demo](https://pugalenthi0928.github.io/training-data-factory/demo.html) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html) | [Engineering roadmap](docs/engineering-roadmap.md)**
+**[Explore the browser walkthrough](https://pugalenthi0928.github.io/training-data-factory/demo.html) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html) | [Engineering roadmap](docs/engineering-roadmap.md)**
 
-The browser demo runs deterministic provenance, contamination, and source-safe split controls without installation or an API key. It is a smoke demo of pipeline behaviour, not a model-quality benchmark.
+The repository now includes a hosted FastAPI demonstration that invokes the real Python workflow, streams its 12-stage event trace, verifies the release, and serves an allowlisted evidence bundle. Public runs are deterministic smoke releases. They prove the declared controls execute, not that a model is production-ready.
 
 ## Current status
 
@@ -70,6 +70,30 @@ make forge
 ```
 
 `make forge` is an offline smoke run. It uses the dummy model and a small synthetic contamination fixture to exercise the pipeline without API calls. The fixture tests the mechanism only. It is not a model benchmark.
+
+## One-click hosted demonstration
+
+The hosted interface uses the same `forge.workflow.run_forge` function as the CLI and test suite. It does not accept file paths, URLs, uploads, model keys, or arbitrary pipeline settings. A public caller can choose a controlled preset or provide exactly two bounded text documents.
+
+Run it locally:
+
+```bash
+pip install -e ".[dev]"
+forge-web
+```
+
+Open `http://localhost:8000`. A successful run provides live stage status, a content-addressed release ID, gate summaries, inspectable JSON and JSONL artifacts, and a downloadable ZIP evidence bundle.
+
+Container check:
+
+```bash
+docker build -t forge-hosted .
+docker run --rm -p 8000:8000 forge-hosted
+```
+
+`railway.json` and the root `Dockerfile` make the same service deployable from the repository. The server binds to Railway's `PORT`, exposes `/health`, runs as a non-root user, retains only a bounded number of short-lived jobs, and stores transient data outside the repository. Use one application process because the job registry and rate limiter are intentionally in memory at this stage.
+
+The public claim boundary is explicit. A deterministic smoke run establishes pipeline execution, artifact integrity, source-isolated splitting, and the operation of the declared controls on the submitted material. It does not establish model quality, production safety, human preference, or complete sensitive-data detection.
 
 Outputs are written to a timestamped directory under `runs/`, including:
 
@@ -196,7 +220,10 @@ src/forge/
   profiling.py       Source, task, quality, difficulty, and rejection profile
   similarity.py      Exact, MinHash LSH, Jaccard, and embedding adapters
   stages.py          Canonical ingest, generation, curation, contamination, and split stages
-  workflow.py        Shared API used by the CLI, tests, workers, and future service
+  workflow.py        Shared API used by the CLI, tests, workers, and hosted service
+  hosted.py          Bounded jobs, presets, evidence allowlist, retention, and rate limits
+  web.py             FastAPI routes, lifecycle, security headers, and server entry point
+  web_static/        Recruiter-facing one-click interface
   cli.py             Installed `forge` command
 
 src/training_data_robo/
@@ -245,7 +272,7 @@ CI runs linting, format checks, type checking, syntax compilation, tests, a cove
 - Source policy entries are declarations supplied by the operator. Forge verifies presence and permitted-use fields, not legal ownership.
 - The included smoke benchmark is synthetic and deliberately small.
 - The current local fine-tuning path is MLX-specific.
-- The hosted browser demo mirrors core controls but does not yet execute the Python pipeline.
+- Hosted jobs and rate limits use in-memory state and one process. Durable distributed execution is outside this bounded demonstration.
 - Stage cache is local to one run directory. Durable shared caching belongs to the hosted architecture stage.
 
 ## Release criteria

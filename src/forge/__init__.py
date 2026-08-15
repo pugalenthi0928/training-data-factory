@@ -36,7 +36,7 @@ from .pairwise_judge import PAIRWISE_JUDGE_PROMPT_SHA256, PAIRWISE_JUDGE_PROMPT_
 from .pipeline import Pipeline, StageContext, StageDefinition, StageExecutionError, StageResult
 from .workflow import ForgeConfig, ForgeRun, build_pipeline, run_forge
 
-__version__ = "0.12.0"
+__version__ = "0.13.0"
 
 __all__ = [
     "ArtifactBinding",
