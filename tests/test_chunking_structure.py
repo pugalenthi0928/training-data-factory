@@ -1,4 +1,5 @@
 """Tests for structure-aware chunking."""
+
 from __future__ import annotations
 
 from training_data_robo.chunking import (
@@ -18,6 +19,7 @@ def _make_doc(content: str, title: str = "test") -> Document:
 # ---------------------------------------------------------------------------
 # Block classification
 # ---------------------------------------------------------------------------
+
 
 class TestClassifyBlock:
     def test_prose(self):
@@ -49,6 +51,7 @@ class TestClassifyBlock:
 # Section detection
 # ---------------------------------------------------------------------------
 
+
 class TestDetectSection:
     def test_h1(self):
         title, level = _detect_section("# Introduction\nSome text here.")
@@ -69,6 +72,7 @@ class TestDetectSection:
 # ---------------------------------------------------------------------------
 # Section splitting
 # ---------------------------------------------------------------------------
+
 
 class TestSplitIntoSections:
     def test_single_section(self):
@@ -98,6 +102,7 @@ class TestSplitIntoSections:
 # Structure-aware chunker
 # ---------------------------------------------------------------------------
 
+
 class TestStructureAwareChunker:
     def test_basic_prose(self):
         content = "# Introduction\n\n" + ("Hello world. " * 50)
@@ -116,11 +121,7 @@ class TestStructureAwareChunker:
         assert chunks[0].metadata["chunk_type"] == "list"
 
     def test_multiple_sections(self):
-        content = (
-            "# Intro\n\nIntro text here.\n\n"
-            "## Methods\n\nMethods text here.\n\n"
-            "## Results\n\nResults text here."
-        )
+        content = "# Intro\n\nIntro text here.\n\n## Methods\n\nMethods text here.\n\n## Results\n\nResults text here."
         doc = _make_doc(content)
         chunks = structure_aware_chunk_document(doc, max_chars=2000)
         titles = [c.metadata["section_title"] for c in chunks]
@@ -148,6 +149,7 @@ class TestStructureAwareChunker:
 # ---------------------------------------------------------------------------
 # Simple chunker still works (regression)
 # ---------------------------------------------------------------------------
+
 
 class TestSimpleChunkerRegression:
     def test_basic(self):

@@ -1,4 +1,5 @@
 """Property-based tests for quality filtering and scoring."""
+
 from __future__ import annotations
 
 import string
@@ -82,10 +83,7 @@ class TestDeduplicateProperties:
     @settings(max_examples=20)
     def test_unique_examples_preserved(self, n: int) -> None:
         """N unique examples should all be preserved."""
-        examples = [
-            _make_example(input_text=f"Question {i}?", output_text=f"Answer {i}.")
-            for i in range(n)
-        ]
+        examples = [_make_example(input_text=f"Question {i}?", output_text=f"Answer {i}.") for i in range(n)]
         result = deduplicate_examples(examples)
         assert len(result) == n
 

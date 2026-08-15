@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "forge-training-data"
 version = "0.9.0"
-description = "Training data engine that proves its own worth — generate, evaluate, fine-tune, benchmark"
+description = "Source-aware training data generation, quality checks, and evaluation workflows"
 authors = [{ name = "Pugalenthi Magendran" }]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 
 # Runtime dependencies
 dependencies = [
@@ -23,7 +23,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.4.0",
-    "mypy>=1.0",
+    "mypy>=1.10,<2.0",
     "hypothesis>=6.0",
     "rouge-score>=0.1.2",
 ]
@@ -50,8 +50,8 @@ target-version = "py39"
 select = ["E", "F", "W", "I", "B", "SIM"]
 ignore = [
     "E501",   # line too long (handled by formatter)
-    "E701",   # multiple statements on one line (colon) — existing code style
-    "E702",   # multiple statements on one line (semicolon) — existing code style
+    "E701",   # multiple statements on one line (colon), existing code style
+    "E702",   # multiple statements on one line (semicolon), existing code style
     "SIM108", # ternary operator (readability)
 ]
 
@@ -59,10 +59,11 @@ ignore = [
 known-first-party = ["training_data_robo"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+follow_imports = "skip"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

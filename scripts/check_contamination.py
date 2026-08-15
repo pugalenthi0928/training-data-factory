@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """CLI wrapper for contamination detection."""
+
 from __future__ import annotations
 
 import argparse
@@ -19,7 +20,15 @@ def main() -> None:
     ap.add_argument("--benchmark-texts", default=None, help="Plain text file (one entry per line) to use as benchmark")
     ap.add_argument("--output", default=None, help="Write contamination report JSON here")
     ap.add_argument("--text-fields", default="output_text,input_text", help="Comma-separated fields to check")
+    ap.add_argument(
+        "--fail-on-contamination",
+        action="store_true",
+        help="Exit nonzero when any overlap crosses the contamination threshold",
+    )
     args = ap.parse_args()
+
+    if not args.benchmark and not args.benchmark_texts:
+        ap.error("provide at least one --benchmark or --benchmark-texts input")
 
     rows = load_jsonl(Path(args.input))
     if not rows:
@@ -31,21 +40,19 @@ def main() -> None:
     for bp in args.benchmark:
         bp_path = Path(bp)
         if not bp_path.exists():
-            print(f"Warning: benchmark file not found: {bp}", file=sys.stderr)
-            continue
+            raise SystemExit(f"Benchmark file not found: {bp}")
         checker.load_benchmark_file(bp_path, name=bp_path.stem)
 
     # Load plain-text benchmark
     if args.benchmark_texts:
         tp = Path(args.benchmark_texts)
-        if tp.exists():
-            texts = [line.strip() for line in tp.read_text(encoding="utf-8").splitlines() if line.strip()]
-            checker.load_custom_texts(texts, name=tp.stem)
+        if not tp.exists():
+            raise SystemExit(f"Benchmark text file not found: {tp}")
+        texts = [line.strip() for line in tp.read_text(encoding="utf-8").splitlines() if line.strip()]
+        checker.load_custom_texts(texts, name=tp.stem)
 
     if checker.index.size == 0:
-        print("Warning: no benchmark data loaded. Provide --benchmark or --benchmark-texts.", file=sys.stderr)
-        print(json.dumps({"error": "no_benchmark_data", "total_examples": len(rows)}, indent=2))
-        return
+        raise SystemExit("No usable benchmark text was loaded")
 
     text_fields = [f.strip() for f in args.text_fields.split(",")]
     report = checker.check_dataset(rows, text_fields=text_fields)
@@ -59,6 +66,9 @@ def main() -> None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         print(f"\nFull report written to {out_path}")
+
+    if args.fail_on_contamination and report["contaminated_count"] > 0:
+        raise SystemExit(f"Contamination gate failed: {report['contaminated_count']} examples flagged")
 
 
 if __name__ == "__main__":

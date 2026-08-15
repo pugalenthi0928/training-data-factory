@@ -3,713 +3,165 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Forge — Technical Deep-Dive | Pugalenthi Magendran</title>
-  <meta name="description" content="Architecture decisions, component design, trade-offs, and lessons learned building Forge.">
+  <title>Forge Technical Controls | Pugalenthi Magendran</title>
+  <meta name="description" content="Technical controls for provenance, source-grouped splitting, contamination screening, statistics, CI, and failure handling in Forge.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <div class="cursor-dot" aria-hidden="true"></div>
-  <div class="cursor-ring" aria-hidden="true"></div>
-  <div class="grain-overlay" aria-hidden="true"></div>
-  <div class="mouse-glow" aria-hidden="true"></div>
-
-  <button class="back-to-top" aria-label="Back to top">
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-  </button>
-
-  <nav class="nav" id="nav">
+  <nav class="nav">
     <div class="nav-inner">
-      <a href="https://pugalenthimagendran.com/" class="nav-logo">P.</a>
+      <a href="index.html" class="nav-logo">F.</a>
       <div class="nav-links">
-        <a href="https://pugalenthimagendran.com/projects/" class="active">Projects</a>
-        <a href="https://pugalenthimagendran.com/#about">About</a>
-        <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-        <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-        <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-        <a href="https://pugalenthimagendran.com/#contact">Contact</a>
+        <a href="index.html">Forge</a>
+        <a href="overview.html">Overview</a>
+        <a href="technical.html" class="active">Technical</a>
+        <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
       </div>
-      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
-        <span></span>
-        <span></span>
-      </button>
     </div>
-  </nav>
-
-  <nav class="nav-mobile" id="nav-mobile" aria-label="Mobile navigation">
-    <a href="https://pugalenthimagendran.com/projects/">Projects</a>
-    <a href="https://pugalenthimagendran.com/#about">About</a>
-    <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-    <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-    <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-    <a href="https://pugalenthimagendran.com/#contact">Contact</a>
   </nav>
 
   <div class="mode-bar">
     <h1>Forge</h1>
     <div class="mode-bar-right">
       <div class="tab-group">
-        <a href="index.html">Demo</a>
+        <a href="index.html">Evidence</a>
         <a href="overview.html">Overview</a>
         <a href="technical.html" class="active">Technical</a>
       </div>
-      <a href="https://github.com/pugalenthi0928/training-data-factory" target="_blank" rel="noopener" class="mode-bar-github">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
-      </a>
+      <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
     </div>
   </div>
 
   <main>
-  <div class="container">
-
-  <h1>How Forge Is Built</h1>
-  <p class="subtitle">
-    Architecture decisions, component design, trade-offs, and lessons learned.
-    Written to the level of detail where you could rebuild any part from scratch.
-  </p>
-
-  <h2>Motivation and Design Goals</h2>
-
-  <p>
-    The idea for Forge came from a pattern I kept seeing in training data projects: people
-    generate synthetic data, glance at a few examples, and ship it. Nobody checks if the
-    data is actually good. Nobody trains a model on it to prove it works. Nobody looks for
-    benchmark contamination. The result is a pipeline that produces output but offers no
-    evidence that the output is useful.
-  </p>
-
-  <p>
-    I wanted to build something different. Not just a data generator, but a system that
-    evaluates its own output and closes the loop by fine-tuning a model and measuring the
-    result. The design goals were:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li>Multi-strategy generation (not just Q&A)</li>
-    <li>Automated quality evaluation with rubric-based scoring</li>
-    <li>Benchmark contamination detection</li>
-    <li>Local model fine-tuning (zero cloud GPU cost)</li>
-    <li>Statistical significance testing on benchmark results</li>
-    <li>Full reproducibility with experiment tracking</li>
-  </ul>
-
-  <h2>System Architecture</h2>
-
-  <p>
-    Forge is a Python library (<code>src/training_data_robo/</code>) with thin CLI
-    wrappers in <code>scripts/</code>. The library handles all the logic; the scripts
-    handle argument parsing and call into the library. This separation matters for
-    testability. You can unit test the library code without touching CLI arguments or
-    file I/O.
-  </p>
-
-  <p>
-    The pipeline orchestrator (<code>pipeline.py</code>) wires everything together as a
-    directed acyclic graph (DAG). Each step declares its dependencies, and the runner
-    resolves execution order with topological sort. Steps cache their outputs, so if you
-    re-run after a failure, only the failed and downstream steps execute.
-  </p>
-
-  <div class="file-tree">
-    src/training_data_robo/
-    <div class="indent">bot.py           <span class="comment"># orchestrator: loads docs, chunks, generates, exports</span></div>
-    <div class="indent">cli.py           <span class="comment"># CLI entry point with task templates</span></div>
-    <div class="indent">models.py        <span class="comment"># domain models: TaskType, TrainingExample, TextChunk</span></div>
-    <div class="indent">chunking.py      <span class="comment"># structure-aware document chunking</span></div>
-    <div class="indent">task_selector.py <span class="comment"># maps chunk metadata to task types</span></div>
-    <div class="indent">quality.py       <span class="comment"># heuristic quality filters</span></div>
-    <div class="indent">judge.py         <span class="comment"># LLM-as-judge rubric evaluation</span></div>
-    <div class="indent">contamination.py <span class="comment"># n-gram overlap detection</span></div>
-    <div class="indent">difficulty.py    <span class="comment"># easy/medium/hard calibration</span></div>
-    <div class="indent">diversity.py     <span class="comment"># vocabulary and task diversity metrics</span></div>
-    <div class="indent">selector.py      <span class="comment"># data selection strategies</span></div>
-    <div class="indent">pipeline.py      <span class="comment"># DAG runner with caching and resume</span></div>
-    <div class="indent">tracker.py       <span class="comment"># experiment tracking (runs/ directory)</span></div>
-    <div class="indent">io.py            <span class="comment"># JSONL read/write utilities</span></div>
-    <div class="indent">ai_client.py     <span class="comment"># LLM client abstraction</span></div>
-  </div>
-
-  <h2>Document Processing</h2>
-
-  <h3>Source loading</h3>
-  <p>
-    The unified loader (<code>sources/unified.py</code>) accepts a directory path and
-    dispatches to format-specific readers for text files, PDFs, and web pages. Each reader
-    returns a list of <code>Document</code> objects with a <code>text</code> field and a
-    <code>metadata</code> dict containing the source path and format. This abstraction
-    lets you add new formats without touching the pipeline.
-  </p>
-
-  <h3>Structure-aware chunking</h3>
-  <p>
-    Naive chunking splits text at fixed character boundaries or paragraph breaks. This
-    produces chunks that start mid-sentence or split a numbered list in half. Forge's
-    chunker (<code>chunking.py</code>) does something better: it scans for markdown
-    headers, list markers, and horizontal rules, and uses those as preferred split points.
-  </p>
-
-  <p>
-    Each chunk carries metadata about its structure: <code>section_title</code>,
-    <code>section_level</code>, and <code>chunk_type</code> (prose, list, table, or mixed).
-    This metadata feeds into the task selector downstream.
-  </p>
-
-  <p>
-    The chunker takes two parameters: <code>max_chars</code> (the target chunk size,
-    default 900) and <code>overlap</code> (the number of characters to repeat between
-    consecutive chunks, default 100). The overlap ensures that content near chunk boundaries
-    is not lost. I chose 900 characters as the default because it produces chunks of roughly
-    200-250 tokens, which is a comfortable input length for generation without overwhelming
-    the context.
-  </p>
-
-  <h3>Adaptive task selection</h3>
-  <p>
-    Not every chunk is suitable for every task type. A 50-word chunk is too short for a
-    meaningful summary but fine for a title generation task. A chunk containing a bulleted
-    list maps naturally to key-point extraction but poorly to chain-of-thought reasoning.
-  </p>
-
-  <p>
-    The task selector (<code>task_selector.py</code>) maps chunk metadata to task types.
-    Prose chunks with at least 150 characters get all four task types (QA, summary,
-    instruction, chain-of-thought). List chunks get key-point extraction and classification.
-    Short chunks (under 150 characters) get only title generation. This produces a more
-    diverse and naturally balanced dataset than assigning all task types to all chunks.
-  </p>
-
-  <h2>Multi-Strategy Generation</h2>
-
-  <p>
-    Forge generates four types of training examples, each using a different prompt template
-    defined in <code>cli.py</code>:
-  </p>
-
-  <table>
-    <tr><th>Task</th><th>What it produces</th><th>Why it matters</th></tr>
-    <tr>
-      <td>Q&A</td>
-      <td>A question about the passage and its answer</td>
-      <td>Tests factual comprehension, the most common training data format</td>
-    </tr>
-    <tr>
-      <td>Summary</td>
-      <td>A condensed version of the passage</td>
-      <td>Teaches the model to distill information, useful for many downstream tasks</td>
-    </tr>
-    <tr>
-      <td>Instruction</td>
-      <td>A realistic user request and the ideal response</td>
-      <td>Trains instruction-following behavior, closer to real usage patterns</td>
-    </tr>
-    <tr>
-      <td>Chain-of-thought</td>
-      <td>A reasoning question with step-by-step solution</td>
-      <td>Develops multi-step reasoning, the hardest skill to train</td>
-    </tr>
-  </table>
-
-  <p>
-    The generation model (GPT-4.1-mini by default) receives the chunk text and a structured
-    prompt template. The template specifies the expected output format so that the response
-    can be parsed reliably. For example, the instruction template asks for output in the
-    format <code>INSTRUCTION: ... RESPONSE: ...</code>.
-  </p>
-
-  <h3>LLM client abstraction</h3>
-  <p>
-    The <code>ai_client.py</code> module defines two implementations of the same interface:
-    <code>OpenAILLMClient</code> for real API calls and <code>DummyLLMClient</code> for
-    testing. The dummy client returns deterministic, syntactically valid responses that
-    pass downstream processing without hitting any API. This lets the entire pipeline run
-    in "dry-run" mode for development and CI.
-  </p>
-
-  <p>
-    The bot (<code>bot.py</code>) automatically selects the client based on whether
-    <code>OPENAI_API_KEY</code> is set, or you can pass <code>--fake-model</code> to
-    force the dummy client.
-  </p>
-
-  <h2>Quality Assurance Pipeline</h2>
-
-  <p>
-    Quality evaluation happens in multiple layers. Each layer catches different types of
-    problems, and they are ordered from cheapest to most expensive.
-  </p>
-
-  <h3>Layer 1: Heuristic quality scoring</h3>
-  <p>
-    The first pass (<code>postprocess_quality.py</code> calling into <code>quality.py</code>)
-    runs zero-cost checks on every example:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>Empty output detection.</strong> Penalizes blank or whitespace-only outputs (score -0.5).</li>
-    <li><strong>Length validation.</strong> Each task type has a minimum output length.
-      Summaries require at least 80 characters, Q&A at least 10. Outputs below the
-      threshold get a <code>short_output</code> flag (score -0.2).</li>
-    <li><strong>Refusal detection.</strong> Matches against a list of common refusal phrases
-      ("as an AI language model", "I cannot", "I'm unable to"). Refusals indicate the
-      generation model refused the task, producing useless training data (score -0.3).</li>
-    <li><strong>Repetition detection.</strong> Counts token frequencies. If any single token
-      accounts for more than 50% of a 20+ token output, it is flagged as
-      <code>repetitive_output</code> (score -0.2). This catches degenerate outputs like
-      "the the the the...".</li>
-    <li><strong>Grounding check.</strong> For Q&A examples with both an answer and a context,
-      it measures token overlap between the answer and context. If fewer than 20% of answer
-      tokens appear in the context, it is flagged as <code>weak_grounding</code> (score -0.2).
-      This catches hallucinated answers that ignore the source material.</li>
-  </ul>
-
-  <p>
-    Each example gets a quality score between 0.0 and 1.0, and a list of flags describing
-    what (if anything) went wrong. These heuristics are fast and free. They catch the
-    obvious problems before the expensive LLM judge runs.
-  </p>
-
-  <h3>Layer 2: LLM-as-Judge</h3>
-  <p>
-    The second pass (<code>judge.py</code>) sends each example to GPT-4.1-mini for rubric-based
-    evaluation. The judge scores four dimensions on a 1 to 5 scale:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>Faithfulness</strong> (1-5): Does the output accurately reflect the source? No hallucination?</li>
-    <li><strong>Helpfulness</strong> (1-5): Would a person find this useful?</li>
-    <li><strong>Complexity</strong> (1-5): Is the example substantive and non-trivial?</li>
-    <li><strong>Coherence</strong> (1-5): Is the output well-structured, clear, logical?</li>
-  </ul>
-
-  <p>
-    For each dimension, the judge returns both a score and a one-sentence explanation. The
-    explanations are stored in the output JSONL so you can inspect why any example got a
-    low score.
-  </p>
-
-  <p>
-    Why GPT-4.1-mini instead of GPT-4? Cost. Judging 200 examples across 4 dimensions is
-    800 LLM calls. With GPT-4.1-mini this costs roughly $1-2. With GPT-4 it would be
-    $15-20 for the same task. The quality of judgments from 4.1-mini is good enough for
-    scoring. Where you need the strongest model is generation, not evaluation.
-  </p>
-
-  <p>
-    The judge processes examples in batches of 10 with sequential API calls. I initially
-    considered async concurrency, but the rate limits on the API made sequential processing
-    more predictable and easier to debug. At 10 examples per batch with 4 dimensions each,
-    the 200-example run took about 17 minutes.
-  </p>
-
-  <h3>Layer 3: Deduplication</h3>
-  <p>
-    Duplicate examples bias the model toward certain patterns and waste the training budget.
-    Forge supports two deduplication methods:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>Hash-based</strong> (<code>compute_dedupe.py</code>): Converts each output
-      to a bag-of-words representation, sorts the tokens, and hashes the result. Identical
-      hashes mean identical content (up to word order). This is fast and deterministic.</li>
-    <li><strong>Embedding-based</strong>: Uses text-embedding-3-small to compute vector
-      representations and removes examples whose cosine similarity exceeds a threshold.
-      This catches paraphrased duplicates that hash-based methods miss, at the cost of
-      an API call.</li>
-  </ul>
-
-  <p>
-    The default is hash-based because it is free and catches exact duplicates. In the demo
-    run, zero duplicates were found because the generation model produces sufficiently
-    diverse outputs from different chunks.
-  </p>
-
-  <h3>Layer 4: Contamination detection</h3>
-  <p>
-    Benchmark contamination is when training data overlaps with evaluation benchmarks. If
-    you train on MMLU questions and then evaluate on MMLU, the results are meaningless.
-    This problem is surprisingly common in practice and rarely checked for.
-  </p>
-
-  <p>
-    The contamination detector (<code>contamination.py</code>) works by n-gram matching.
-    It downloads benchmark datasets (MMLU, ARC, HellaSwag) on first run and caches them
-    locally. It builds indexes of 8-grams and 13-grams from the benchmark text, then
-    checks every training example for matching n-grams.
-  </p>
-
-  <p>
-    Why n-grams instead of embedding similarity? Precision. N-gram matching produces
-    zero false positives: if an 8-gram from your training data appears verbatim in
-    MMLU, that is a real overlap. Embedding similarity would flag semantically similar
-    but textually different content, leading to over-flagging. The trade-off is that
-    n-gram matching does not catch paraphrased contamination, but for the purpose of
-    building a training data pipeline, the precision of exact matching is more useful
-    than the recall of fuzzy matching.
-  </p>
-
-  <h3>Difficulty calibration</h3>
-  <p>
-    The difficulty module (<code>difficulty.py</code>) tags each example as easy, medium,
-    or hard based on a scoring function. The scoring considers:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li>Output length (longer outputs tend to be harder)</li>
-    <li>Vocabulary complexity (type-token ratio, average word length)</li>
-    <li>Task type (chain-of-thought is harder than title generation)</li>
-    <li>Reasoning indicators (presence of "step", "because", "therefore")</li>
-  </ul>
-
-  <p>
-    This is a heuristic, not a ground truth. It exists to enable curriculum-based training
-    strategies and to give a rough breakdown of dataset composition. In the demo run, the
-    distribution was 1% easy, 38% medium, 61% hard, which makes sense given that the
-    source material was technical ML content.
-  </p>
-
-  <h2>Data Selection and Splitting</h2>
-
-  <p>
-    The selector (<code>selector.py</code>) implements four strategies for choosing which
-    examples to include in the final training set:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>Quality-weighted:</strong> Ranks by judge score and selects the top N.
-      Simple and effective.</li>
-    <li><strong>Diverse:</strong> Greedily selects examples that maximize vocabulary
-      diversity. Avoids redundancy.</li>
-    <li><strong>Balanced:</strong> Ensures equal representation across task types. Prevents
-      the model from over-fitting to any single task.</li>
-    <li><strong>Curriculum:</strong> Selects a mix of difficulty levels, biased toward
-      medium difficulty with smaller fractions of easy and hard. Based on the intuition
-      that training is most efficient on examples that are challenging but not impossibly
-      hard.</li>
-  </ul>
-
-  <p>
-    The train/test split (<code>split_dataset.py</code>) uses stratified sampling to
-    ensure the same distribution of task types in both sets. The default is 80% train /
-    20% test. The test set is never used for training, selection, or any other pipeline
-    step except the final benchmark.
-  </p>
-
-  <h2>Fine-Tuning</h2>
-
-  <h3>Why LoRA on a small model</h3>
-  <p>
-    The goal of the fine-tuning step is not to produce a production model. It is to prove
-    that the generated training data causes measurable improvement on a real model. For
-    this purpose, a small model (Qwen 2.5 0.5B, 494 million parameters) fine-tuned with
-    LoRA is ideal:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li>It trains in 5 minutes on a laptop with no cloud GPU</li>
-    <li>LoRA trains only 0.59% of parameters (2.9M out of 494M), so the memory footprint
-      is manageable (9 GB peak)</li>
-    <li>The model is small enough that 200 training examples can produce visible improvement,
-      whereas a 7B+ model would need thousands</li>
-    <li>If the data improves a small model, it will also improve a larger one. The
-      proof-of-concept transfers.</li>
-  </ul>
-
-  <h3>MLX on Apple Silicon</h3>
-  <p>
-    I chose MLX (Apple's machine learning framework) because it runs natively on Apple
-    Silicon with unified memory, eliminating the need for a GPU server. The
-    <code>finetune_mlx.py</code> script handles the full workflow:
-  </p>
-
-  <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li>Load the training JSONL and convert each example to chat format:
-      <code>{"messages": [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]}</code></li>
-    <li>Write the formatted data to a directory with <code>train.jsonl</code>,
-      <code>valid.jsonl</code>, and <code>test.jsonl</code></li>
-    <li>Invoke <code>mlx_lm.lora</code> with the configured hyperparameters</li>
-    <li>Save the adapter weights and training metrics</li>
-  </ol>
-
-  <p>
-    The default configuration uses rank 8, 16 layers, batch size 4, learning rate 1e-4,
-    and 3 epochs. The number of iterations is calculated as <code>epochs * (train_examples / batch_size)</code>.
-    Checkpoints are saved every 40 iterations.
-  </p>
-
-  <h3>Training dynamics</h3>
-  <p>
-    In the demo run, training loss dropped from 1.9 to 0.14 over 120 iterations. Validation
-    loss went from 2.3 to 0.73. The gap between training and validation loss (0.14 vs 0.73)
-    suggests some overfitting, which is expected with a small dataset and 3 epochs. For a
-    proof-of-concept, this is fine. In production, you would use more data, fewer epochs,
-    or stronger regularization.
-  </p>
-
-  <h2>Benchmarking</h2>
-
-  <h3>Metrics</h3>
-  <p>
-    The benchmark script (<code>benchmark.py</code>) computes three standard metrics:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>ROUGE-1:</strong> Unigram overlap between generated text and reference.
-      Measures whether the model uses the right words.</li>
-    <li><strong>ROUGE-2:</strong> Bigram overlap. Measures whether the model produces
-      the right phrases.</li>
-    <li><strong>ROUGE-L:</strong> Longest common subsequence. Measures structural similarity
-      independent of word order.</li>
-  </ul>
-
-  <p>
-    Exact match is also computed but was 0% for both models, which is expected. Open-ended
-    generation tasks rarely produce exact matches even when the content is correct.
-  </p>
-
-  <h3>Paired bootstrap significance test</h3>
-  <p>
-    Showing that ROUGE-L went from 0.289 to 0.417 is not enough. You need to know if the
-    difference is statistically significant. Forge uses a paired bootstrap test:
-  </p>
-
-  <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li>Compute per-example ROUGE-L scores for both models</li>
-    <li>Calculate the observed delta (mean difference)</li>
-    <li>Randomly flip the sign of each delta 1000 times (the null hypothesis that there is
-      no real difference)</li>
-    <li>Count how often the shuffled delta exceeds the observed delta</li>
-    <li>The fraction is the p-value</li>
-  </ol>
-
-  <p>
-    A p-value below 0.05 means the improvement is statistically significant. In the demo
-    run, p = 0.0 (none of the 1000 shuffled deltas exceeded the observed one), indicating
-    the improvement is real with very high confidence.
-  </p>
-
-  <h2>Pipeline Orchestration</h2>
-
-  <h3>DAG runner</h3>
-  <p>
-    The pipeline runner (<code>pipeline.py</code>) models the pipeline as a directed
-    acyclic graph. Each step is a <code>PipelineStep</code> with a name, command,
-    list of dependencies, and expected output files. The runner:
-  </p>
-
-  <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li>Resolves execution order with topological sort (Kahn's algorithm)</li>
-    <li>Checks for cached outputs before executing each step</li>
-    <li>Runs each step as a subprocess with timing</li>
-    <li>Records success/failure and timing in a pipeline log</li>
-    <li>Continues with remaining steps even if one fails (unless downstream steps depend
-      on the failed step)</li>
-  </ol>
-
-  <p>
-    The orchestrator script (<code>run_forge.py</code>) defines the step graph and passes
-    it to the runner. If you re-run after a mid-pipeline failure, only the failed step and
-    its dependents re-execute. The cache check is based on the existence of output files,
-    not content hashing. This is a simplification: it means that if you change the
-    generation prompt but not the output path, the cache will serve stale results. For a
-    portfolio project, this trade-off is acceptable. For production, you would hash the
-    step configuration as part of the cache key.
-  </p>
-
-  <h3>Experiment tracking</h3>
-  <p>
-    The tracker (<code>tracker.py</code>) is a lightweight alternative to MLflow or W&B.
-    Each run creates a directory under <code>runs/</code> with:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><code>config.json</code>: Full run configuration (model, hyperparameters, paths)</li>
-    <li><code>pipeline_log.json</code>: Step-by-step execution log with timings</li>
-    <li><code>benchmark.json</code>: Before/after comparison with significance test</li>
-    <li>All intermediate JSONL files (raw, quality, deduped, judged, difficulty, train, test)</li>
-  </ul>
-
-  <p>
-    The Streamlit dashboard (<code>app.py</code>) reads these directories and renders
-    comparison views. You can select any two runs and compare their metrics side by side.
-  </p>
-
-  <h2>Testing</h2>
-
-  <p>
-    The test suite has 184 tests across 24 files. The approach varies by component:
-  </p>
-
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>Unit tests</strong> for pure functions (quality scoring, difficulty
-      calibration, n-gram matching, ROUGE computation)</li>
-    <li><strong>Property-based tests</strong> using Hypothesis for invariants that should
-      hold for any input (quality scores are always between 0 and 1, deduplication never
-      increases the dataset size, chunking always produces non-empty chunks)</li>
-    <li><strong>Integration tests</strong> for the pipeline runner (build a small DAG,
-      run it, verify execution order and caching behavior)</li>
-    <li><strong>Mock-based tests</strong> for LLM-dependent code (the judge, the bot).
-      These use <code>DummyLLMClient</code> or <code>unittest.mock.patch</code> to avoid
-      real API calls.</li>
-  </ul>
-
-  <p>
-    Coverage is 72% overall. The gaps are in source loaders (PDF, web) and the CLI module,
-    which are harder to unit test and less critical than the core pipeline logic. The core
-    modules (io, quality, difficulty, diversity, selector, pipeline, tracker, task_selector,
-    chunking) are all above 80%.
-  </p>
-
-  <h2>Limitations and What I Would Do Differently</h2>
-
-  <h3>Honest limitations</h3>
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>Fine-tuning model size.</strong> Qwen 2.5 0.5B is a proof of concept.
-      A 0.5B model does not have the capacity to learn complex reasoning from 160 examples.
-      The ROUGE improvement is real, but it mostly reflects pattern matching (the model
-      learns to produce outputs that look like the training data). A 7B+ model with 1000+
-      examples would show more meaningful improvements.</li>
-    <li><strong>Contamination detection scope.</strong> The n-gram method only catches
-      verbatim overlap. A training example that paraphrases a benchmark question would
-      not be flagged. Embedding-based contamination detection would catch more cases but
-      at the cost of false positives.</li>
-    <li><strong>LLM-as-judge bias.</strong> Using GPT-4.1-mini to judge data generated by
-      GPT-4.1-mini introduces a self-evaluation bias. The judge may rate its own generation
-      style higher than it deserves. Ideally, the judge would be a different model family,
-      or you would calibrate against human ratings.</li>
-    <li><strong>Single-domain evaluation.</strong> The benchmark only measures performance on
-      the same domain as the training data. It does not check whether fine-tuning caused
-      catastrophic forgetting on general-purpose tasks.</li>
-  </ul>
-
-  <h3>What I would change</h3>
-  <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
-    <li><strong>Async generation.</strong> The current pipeline makes sequential API calls
-      with some batching. Async concurrency with rate limiting would cut the generation and
-      judging time by 3-5x.</li>
-    <li><strong>Content-addressed caching.</strong> The pipeline cache checks file existence
-      only. Hashing the step config and input content would make caching correct across
-      configuration changes.</li>
-    <li><strong>Cross-domain forgetting test.</strong> Run the fine-tuned model on a
-      general-purpose benchmark (MMLU subset) to verify that domain-specific fine-tuning
-      did not degrade general capabilities.</li>
-    <li><strong>Human evaluation calibration.</strong> Have a human rate 50 examples, then
-      measure correlation between human ratings and LLM judge ratings. This would give a
-      confidence score for the automated evaluation.</li>
-  </ul>
-
-  <h2>Cost Breakdown</h2>
-
-  <table>
-    <tr><th>Component</th><th>Cost</th><th>Notes</th></tr>
-    <tr><td>Generation (200 examples, 4 tasks)</td><td>~$3-5</td><td>GPT-4.1-mini, 162 chunks</td></tr>
-    <tr><td>LLM-as-Judge (200 x 4 dimensions)</td><td>~$1-2</td><td>GPT-4.1-mini, 800 calls</td></tr>
-    <tr><td>Heuristic quality, dedup, difficulty</td><td>$0</td><td>No API calls</td></tr>
-    <tr><td>MLX fine-tuning</td><td>$0</td><td>Local Apple Silicon</td></tr>
-    <tr><td>Benchmark inference</td><td>$0</td><td>Local MLX</td></tr>
-    <tr><td><strong>Total</strong></td><td><strong>~$5</strong></td><td></td></tr>
-  </table>
-
-  <p>
-    The pipeline is designed to be cheap. The most expensive step is generation ($3-5), followed
-    by judging ($1-2). Everything else is local computation. This makes it feasible to iterate
-    quickly: change a prompt template, re-run, compare results.
-  </p>
-
-  <hr>
-
-  <p style="font-size: 0.9rem; color: var(--text-tertiary);">
-    For a plain-English explanation, read the <a href="overview.html">overview</a>.
-    For live results and sample data, see the <a href="index.html">demo page</a>.
-    Source code is on <a href="https://github.com/pugalenthi0928/training-data-factory">GitHub</a>.
-  </p>
-
-  </div>
-
-  <div class="gradient-divider"></div>
-
+    <section class="hero">
+      <h1>Integrity controls, <em>implemented.</em></h1>
+      <p class="subtitle">
+        The technical rebuild focuses on the places where training data pipelines most often
+        become misleading: identity, splits, contamination, failure handling, and statistics.
+      </p>
+    </section>
+
+    <div class="container">
+      <h2>Deterministic provenance</h2>
+      <p>
+        <code>Document</code> identifiers are SHA-256 digests of normalised source content. <code>TextChunk</code>
+        identifiers combine the document ID, chunk index, and normalised chunk text. Moving a
+        file does not change its source identity, while changing its content does.
+      </p>
+      <pre><code>document_id = sha256(normalise(document_content))
+chunk_id    = sha256(document_id, chunk_index, normalise(chunk_text))</code></pre>
+      <p>
+        Content identity is intentional. If identical content appears under two file paths,
+        Forge treats it as one source group so the duplicate cannot cross train and test.
+      </p>
+
+      <h2>Source-grouped split</h2>
+      <p>
+        The earlier splitter shuffled examples inside task groups. That allowed examples from
+        one document, or even one chunk, to appear in both partitions. The rebuilt splitter:
+      </p>
+      <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+        <li>Requires <code>document_id</code> on every row.</li>
+        <li>Requires at least two unique sources.</li>
+        <li>Assigns complete source groups to one partition.</li>
+        <li>Searches deterministic seeded candidates for the whole-source subset closest to the requested row fraction.</li>
+        <li>Verifies document and available chunk identifiers are disjoint.</li>
+        <li>Writes an audit manifest with counts, hashes, seed, and overlap results.</li>
+      </ol>
+      <div class="callout">
+        Whole-source isolation has priority over an exact 80/20 row count. If source sizes are
+        uneven, the achieved fraction is recorded explicitly.
+      </div>
+
+      <h2>Contamination gate</h2>
+      <p>
+        The contamination command indexes benchmark text into 8-gram and 13-gram sets, then
+        checks generated inputs and outputs for overlap. <code>run_forge.py</code> requires at least one
+        benchmark path. A missing file, an empty index, or flagged overlap stops the run.
+      </p>
+      <pre><code>python scripts/check_contamination.py \
+  --input run/judged.jsonl \
+  --benchmark /path/to/independent_eval.jsonl \
+  --output run/contamination_report.json \
+  --fail-on-contamination</code></pre>
+      <p>
+        This is a high-precision lexical screen. It can miss paraphrases and concept-level
+        leakage, so it is one gate rather than a complete contamination solution.
+      </p>
+
+      <h2>Evaluation statistics</h2>
+      <p>
+        The earlier function was named paired bootstrap, but its implementation randomly
+        flipped paired differences. That procedure is a paired randomization test. The rebuild
+        names it correctly and separates it from the bootstrap interval.
+      </p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Paired randomization test</h3>
+          <p>One-sided test for whether model B exceeds model A. The p-value uses `(extreme + 1) / (resamples + 1)`, so it cannot be reported as zero.</p>
+        </div>
+        <div class="card">
+          <h3>Paired bootstrap interval</h3>
+          <p>Percentile interval over resampled paired deltas. The report stores confidence level, lower and upper bounds, resamples, and seed.</p>
+        </div>
+      </div>
+      <p>
+        Statistical significance on internally generated references remains an internal
+        regression signal. It is not a substitute for an independent benchmark or human review.
+      </p>
+
+      <h2>Failure semantics</h2>
+      <table>
+        <tr><th>Condition</th><th>Behaviour</th></tr>
+        <tr><td>Generation, quality, deduplication, judging, difficulty, or selection fails</td><td>Pipeline exits nonzero</td></tr>
+        <tr><td>Benchmark missing or empty</td><td>Contamination stage exits nonzero</td></tr>
+        <tr><td>Contamination threshold crossed</td><td>Report is written, then pipeline exits nonzero</td></tr>
+        <tr><td>Source provenance missing</td><td>Split refuses to run</td></tr>
+        <tr><td>Fine-tuning or benchmark fails</td><td>Live pipeline exits nonzero</td></tr>
+      </table>
+
+      <h2>Verified development path</h2>
+      <p>
+        CI uses pinned direct development dependencies and Python 3.11. It checks Ruff linting,
+        Ruff formatting, Mypy, Python syntax, Pytest, and a 70 percent coverage threshold.
+      </p>
+      <pre><code>make lint
+make typecheck
+make test
+make coverage</code></pre>
+      <p>
+        The offline smoke command completes generation, quality scoring, exact-hash deduplication,
+        fake judging, contamination screening, difficulty calibration, and source-safe splitting.
+        It leaves the same config, logs, reports, and manifests expected from a live run.
+      </p>
+
+      <h2>What remains before a model result is published</h2>
+      <ol style="padding-left: 1.5rem; margin-bottom: 1rem;">
+        <li>Construct an independently authored evaluation set with documented provenance.</li>
+        <li>Create a human-reviewed subset and freeze the scoring protocol.</li>
+        <li>Use a judge from a different model family or calibrate the judge against human ratings.</li>
+        <li>Run multiple training seeds or publish an equivalent uncertainty design.</li>
+        <li>Tag the release only after a fresh-install reproduction and green CI.</li>
+      </ol>
+
+      <hr>
+      <p>
+        See the <a href="https://github.com/pugalenthi0928/training-data-factory">source and tests</a>,
+        or return to the <a href="overview.html">plain-language overview</a>.
+      </p>
+    </div>
   </main>
 
   <footer class="footer">
-    <div class="container" style="max-width: 1200px;">
-      <div class="footer-top">
-        <div class="footer-brand">
-          <a href="https://pugalenthimagendran.com/" class="footer-logo">P.</a>
-          <p class="footer-tagline">Building intelligent systems.</p>
-        </div>
-        <nav class="footer-nav">
-          <a href="https://pugalenthimagendran.com/projects/">Projects</a>
-          <a href="https://pugalenthimagendran.com/#about">About</a>
-          <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-          <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-          <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-          <a href="https://pugalenthimagendran.com/#contact">Contact</a>
-        </nav>
-      </div>
+    <div class="container">
       <div class="footer-bottom">
-        <span class="footer-copyright">&copy; 2026 Pugalenthi Magendran</span>
-        <span class="footer-credit">Built with <span>vanilla HTML, CSS & JS</span></span>
+        <span>Forge by Pugalenthi Magendran</span>
+        <span>Inspectable from source to result</span>
       </div>
     </div>
   </footer>
-
-<script>
-(function() {
-  var toggle = document.querySelector('.nav-toggle');
-  var mobile = document.getElementById('nav-mobile');
-  if (!toggle || !mobile) return;
-  toggle.addEventListener('click', function() {
-    var open = mobile.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', open);
-  });
-  mobile.querySelectorAll('a').forEach(function(a) {
-    a.addEventListener('click', function() {
-      mobile.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-    });
-  });
-})();
-(function() {
-  var dot = document.querySelector('.cursor-dot');
-  var ring = document.querySelector('.cursor-ring');
-  if (!dot || !ring || window.matchMedia('(pointer: coarse)').matches) {
-    if (dot) dot.style.display = 'none';
-    if (ring) ring.style.display = 'none';
-    return;
-  }
-  var mx = 0, my = 0, rx = 0, ry = 0;
-  document.addEventListener('mousemove', function(e) {
-    mx = e.clientX; my = e.clientY;
-    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-  });
-  (function animate() {
-    rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15;
-    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-    requestAnimationFrame(animate);
-  })();
-})();
-(function() {
-  var glow = document.querySelector('.mouse-glow');
-  if (!glow || window.matchMedia('(pointer: coarse)').matches) return;
-  document.addEventListener('mousemove', function(e) {
-    glow.style.left = e.clientX + 'px';
-    glow.style.top = e.clientY + 'px';
-  });
-})();
-(function() {
-  var btn = document.querySelector('.back-to-top');
-  if (!btn) return;
-  window.addEventListener('scroll', function() {
-    btn.classList.toggle('visible', window.scrollY > 400);
-  });
-  btn.addEventListener('click', function() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-})();
-</script>
-
 </body>
 </html>

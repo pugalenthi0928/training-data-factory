@@ -66,5 +66,6 @@ def main():
     else:
         print(json.dumps(metrics, indent=2))
 
+
 if __name__ == "__main__":
     main()

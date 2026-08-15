@@ -9,9 +9,7 @@ from .models import Document
 class BaseLoader:
     """Abstract loader interface."""
 
-    async def load_documents(
-        self, sources: Iterable[Union[str, Path]]
-    ) -> List[Document]:
+    async def load_documents(self, sources: Iterable[Union[str, Path]]) -> List[Document]:
         """
         Given a list of sources (files / folders / raw text),
         return a list of normalized Document objects.
@@ -30,9 +28,7 @@ class SimpleFileAndTextLoader(BaseLoader):
     def __init__(self, encoding: str = "utf-8") -> None:
         self.encoding = encoding
 
-    async def load_documents(
-        self, sources: Iterable[Union[str, Path]]
-    ) -> List[Document]:
+    async def load_documents(self, sources: Iterable[Union[str, Path]]) -> List[Document]:
         docs: List[Document] = []
 
         for src in sources:
@@ -43,9 +39,7 @@ class SimpleFileAndTextLoader(BaseLoader):
                     # Recursively load all .txt files in the folder
                     for file_path in path.rglob("*.txt"):
                         text = file_path.read_text(encoding=self.encoding)
-                        docs.append(
-                            Document.from_file(str(file_path), content=text)
-                        )
+                        docs.append(Document.from_file(str(file_path), content=text))
                 elif path.is_file():
                     # Single file
                     text = path.read_text(encoding=self.encoding)

@@ -6,6 +6,7 @@ Tags each example as easy/medium/hard based on:
   - Reasoning indicators (step-by-step, because, therefore, etc.)
   - Question complexity (multi-part questions, comparison questions)
 """
+
 from __future__ import annotations
 
 import re
@@ -18,18 +19,48 @@ _PUNCT_TABLE = str.maketrans("", "", string.punctuation)
 
 # Words that signal multi-step reasoning
 _REASONING_MARKERS = {
-    "therefore", "because", "however", "furthermore", "consequently",
-    "moreover", "nevertheless", "although", "whereas", "implies",
-    "hence", "thus", "assuming", "given that", "it follows",
-    "step 1", "step 2", "step 3", "first", "second", "third",
-    "finally", "in conclusion", "to summarize",
+    "therefore",
+    "because",
+    "however",
+    "furthermore",
+    "consequently",
+    "moreover",
+    "nevertheless",
+    "although",
+    "whereas",
+    "implies",
+    "hence",
+    "thus",
+    "assuming",
+    "given that",
+    "it follows",
+    "step 1",
+    "step 2",
+    "step 3",
+    "first",
+    "second",
+    "third",
+    "finally",
+    "in conclusion",
+    "to summarize",
 }
 
 # Words that signal comparison / complex questions
 _COMPLEXITY_MARKERS = {
-    "compare", "contrast", "difference", "relationship", "analyze",
-    "evaluate", "explain why", "how does", "what would happen",
-    "implications", "trade-off", "tradeoff", "advantages", "disadvantages",
+    "compare",
+    "contrast",
+    "difference",
+    "relationship",
+    "analyze",
+    "evaluate",
+    "explain why",
+    "how does",
+    "what would happen",
+    "implications",
+    "trade-off",
+    "tradeoff",
+    "advantages",
+    "disadvantages",
 }
 
 

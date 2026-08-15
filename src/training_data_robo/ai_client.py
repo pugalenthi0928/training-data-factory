@@ -13,8 +13,7 @@ class BaseLLMClient(Protocol):
         max_tokens: int,
         temperature: float = 0.2,
         top_p: float = 1.0,
-    ) -> str:
-        ...
+    ) -> str: ...
 
 
 class DummyLLMClient:
@@ -33,7 +32,7 @@ class DummyLLMClient:
         temperature: float = 0.2,
         top_p: float = 1.0,
     ) -> str:
-        trimmed = user_prompt[: max_tokens]
+        trimmed = user_prompt[:max_tokens]
         return f"[DUMMY RESPONSE]\n{trimmed}"
 
 
@@ -68,4 +67,4 @@ class OpenAILLMClient:
             temperature=temperature,
             top_p=top_p,
         )
-        return response.output_text
+        return str(response.output_text)

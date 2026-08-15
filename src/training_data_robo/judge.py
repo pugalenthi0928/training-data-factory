@@ -5,6 +5,7 @@ dimensions (faithfulness, helpfulness, complexity, coherence) with
 explicit scoring rubrics. Each verdict includes a 1-5 score,
 one-sentence explanation, and cost tracking.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -20,7 +21,7 @@ logger = get_logger("training_data_robo.judge")
 _JUDGE_SYSTEM = (
     "You are an expert training-data quality judge. "
     "Score the assistant's output on the given dimension using a 1-5 scale. "
-    "Respond with ONLY valid JSON: {\"score\": <int 1-5>, \"explanation\": \"<one sentence>\"}"
+    'Respond with ONLY valid JSON: {"score": <int 1-5>, "explanation": "<one sentence>"}'
 )
 
 _JUDGE_USER_TMPL = (
@@ -31,7 +32,7 @@ _JUDGE_USER_TMPL = (
     "## Task: {task_name}\n\n"
     "## Input\n{input_text}\n\n"
     "## Output to judge\n{output_text}\n\n"
-    "Return JSON: {{\"score\": <int>, \"explanation\": \"<one sentence>\"}}"
+    'Return JSON: {{"score": <int>, "explanation": "<one sentence>"}}'
 )
 
 
@@ -104,6 +105,7 @@ class LLMJudge:
     def _get_client(self) -> Any:
         if self._client is None:
             from openai import OpenAI
+
             if self._api_key:
                 self._client = OpenAI(api_key=self._api_key)
             else:
@@ -153,10 +155,7 @@ class LLMJudge:
         context: str = "",
     ) -> JudgeResult:
         """Score one example on all rubric dimensions."""
-        tasks = [
-            self._score_dimension(dim, example, context)
-            for dim in self.rubric.dimensions
-        ]
+        tasks = [self._score_dimension(dim, example, context) for dim in self.rubric.dimensions]
         verdicts = await asyncio.gather(*tasks)
 
         scores = [v.score for v in verdicts]
@@ -202,11 +201,13 @@ class DummyJudge:
             # Deterministic scoring based on output length
             out_len = len(str(example.get("output_text", "")))
             score = min(5, max(1, out_len // 50 + 1))
-            verdicts.append(JudgeVerdict(
-                dimension=dim.name,
-                score=score,
-                explanation=f"Dummy score based on output length ({out_len} chars)",
-            ))
+            verdicts.append(
+                JudgeVerdict(
+                    dimension=dim.name,
+                    score=score,
+                    explanation=f"Dummy score based on output length ({out_len} chars)",
+                )
+            )
         scores = [v.score for v in verdicts]
         return JudgeResult(
             example_id=str(example.get("id", "")),

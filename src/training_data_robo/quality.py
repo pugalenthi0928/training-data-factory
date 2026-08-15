@@ -12,11 +12,13 @@ REFUSAL_MARKERS = [
     "cannot help with that request",
 ]
 
+
 @dataclass
 class QualityRules:
     min_output_chars: int = 40
     drop_refusals: bool = True
     deduplicate: bool = True  # identical (task_name, input_text) treated as dup
+
 
 def filter_examples(examples: Iterable[TrainingExample], rules: QualityRules) -> List[TrainingExample]:
     cleaned: List[TrainingExample] = []
@@ -30,6 +32,7 @@ def filter_examples(examples: Iterable[TrainingExample], rules: QualityRules) ->
                 continue
         cleaned.append(ex)
     return cleaned
+
 
 def deduplicate_examples(examples: Iterable[TrainingExample]) -> List[TrainingExample]:
     seen: Set[Tuple[str, str]] = set()

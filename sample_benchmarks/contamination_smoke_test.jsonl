@@ -1,0 +1,4 @@
+{"question":"How should a payment service preserve consistency when two concurrent transactions update the same account balance?"}
+{"question":"Which operational signals best reveal a degraded cache before customers report an increase in request latency?"}
+{"question":"What evidence should an incident review collect to distinguish a deployment regression from an upstream dependency failure?"}
+{"question":"How can a scheduler prevent starvation while still prioritising urgent jobs with strict completion deadlines?"}

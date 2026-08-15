@@ -9,6 +9,7 @@ Metrics:
   - Task coverage: number of unique task types represented
   - Redundancy ratio: fraction of near-duplicate pairs (via Jaccard similarity)
 """
+
 from __future__ import annotations
 
 import string
@@ -82,7 +83,7 @@ def compute_diversity_metrics(
     avg_len = sum(lengths) / max(1, len(lengths))
     if avg_len > 0:
         variance = sum((ln - avg_len) ** 2 for ln in lengths) / max(1, len(lengths))
-        std_dev = variance ** 0.5
+        std_dev = variance**0.5
         length_cv = std_dev / avg_len
     else:
         length_cv = 0.0

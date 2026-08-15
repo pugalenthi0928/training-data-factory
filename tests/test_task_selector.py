@@ -1,4 +1,5 @@
 """Tests for adaptive task selection."""
+
 from __future__ import annotations
 
 from training_data_robo.models import Document, TaskTemplate, TaskType, TextChunk
@@ -22,8 +23,12 @@ def _all_templates() -> list[TaskTemplate]:
         TaskTemplate(name="summary", task_type=TaskType.SUMMARISATION, system_prompt="", user_prompt_template="{text}"),
         TaskTemplate(name="kp", task_type=TaskType.KEY_POINTS, system_prompt="", user_prompt_template="{text}"),
         TaskTemplate(name="title", task_type=TaskType.TITLE, system_prompt="", user_prompt_template="{text}"),
-        TaskTemplate(name="classify", task_type=TaskType.CLASSIFICATION, system_prompt="", user_prompt_template="{text}"),
-        TaskTemplate(name="instr", task_type=TaskType.INSTRUCTION_FOLLOWING, system_prompt="", user_prompt_template="{text}"),
+        TaskTemplate(
+            name="classify", task_type=TaskType.CLASSIFICATION, system_prompt="", user_prompt_template="{text}"
+        ),
+        TaskTemplate(
+            name="instr", task_type=TaskType.INSTRUCTION_FOLLOWING, system_prompt="", user_prompt_template="{text}"
+        ),
         TaskTemplate(name="cot", task_type=TaskType.CHAIN_OF_THOUGHT, system_prompt="", user_prompt_template="{text}"),
     ]
 

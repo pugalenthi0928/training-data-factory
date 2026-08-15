@@ -4,6 +4,7 @@ Provides a Pipeline class that executes processing steps in topological order,
 skips steps whose outputs are already up-to-date, and supports resume from
 the last successful step on failure.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -86,9 +87,7 @@ class Pipeline:
         # Validate dependencies exist
         for dep in depends_on or []:
             if dep not in self._steps:
-                raise ValueError(
-                    f"Step {name!r} depends on {dep!r}, which hasn't been added yet"
-                )
+                raise ValueError(f"Step {name!r} depends on {dep!r}, which hasn't been added yet")
 
         self._steps[name] = PipelineStep(
             name=name,
@@ -109,9 +108,7 @@ class Pipeline:
                 adjacency[dep].append(name)
                 in_degree[name] += 1
 
-        queue: deque[str] = deque(
-            name for name, deg in in_degree.items() if deg == 0
-        )
+        queue: deque[str] = deque(name for name, deg in in_degree.items() if deg == 0)
         order: List[str] = []
 
         while queue:
@@ -159,7 +156,7 @@ class Pipeline:
         try:
             stored = json.loads(cache_file.read_text(encoding="utf-8"))
             current_hash = self._compute_input_hash(step)
-            return stored.get("input_hash") == current_hash
+            return bool(stored.get("input_hash") == current_hash)
         except (json.JSONDecodeError, OSError):
             return False
 
@@ -179,7 +176,10 @@ class Pipeline:
             return {}
         try:
             data = json.loads(self.checkpoint_path.read_text(encoding="utf-8"))
-            return data.get("completed", {})
+            completed = data.get("completed", {})
+            if not isinstance(completed, dict):
+                return {}
+            return {str(key): str(value) for key, value in completed.items()}
         except (json.JSONDecodeError, OSError):
             return {}
 
@@ -189,9 +189,7 @@ class Pipeline:
             "completed": completed,
             "last_updated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
-        self.checkpoint_path.write_text(
-            json.dumps(data, indent=2), encoding="utf-8"
-        )
+        self.checkpoint_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def run(self, resume: bool = True) -> List[StepResult]:
         """Execute the pipeline in topological order.
@@ -218,9 +216,7 @@ class Pipeline:
             # Check if already completed in a previous run
             if resume and step_name in completed:
                 # Verify outputs still exist
-                outputs_exist = all(
-                    (self.output_dir / o).exists() for o in step.outputs
-                )
+                outputs_exist = all((self.output_dir / o).exists() for o in step.outputs)
                 if outputs_exist:
                     result = StepResult(
                         name=step_name,
@@ -299,9 +295,7 @@ class Pipeline:
             }
             for r in self._results
         ]
-        self.log_path.write_text(
-            json.dumps(log_entries, indent=2), encoding="utf-8"
-        )
+        self.log_path.write_text(json.dumps(log_entries, indent=2), encoding="utf-8")
 
     def get_results(self) -> List[StepResult]:
         """Return results from the most recent run."""

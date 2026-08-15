@@ -1,4 +1,5 @@
 """Tests for CLI task template building including new task types."""
+
 from __future__ import annotations
 
 import pytest
@@ -52,9 +53,7 @@ class TestBuildTaskTemplates:
         }
 
     def test_all_six_tasks(self):
-        templates = build_task_templates_from_names(
-            ["qa", "summary", "key_points", "title", "instruction", "cot"]
-        )
+        templates = build_task_templates_from_names(["qa", "summary", "key_points", "title", "instruction", "cot"])
         assert len(templates) == 6
 
     def test_invalid_task_raises(self):

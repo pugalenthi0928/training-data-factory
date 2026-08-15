@@ -3,10 +3,11 @@
 Provides multiple strategies for selecting a subset of examples
 for fine-tuning, balancing quality, diversity, and curriculum design.
 """
+
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .logging_config import get_logger
 
@@ -20,6 +21,7 @@ def select_quality_weighted(
     fallback_field: str = "quality_score",
 ) -> List[Dict[str, Any]]:
     """Select top-N examples by quality score (highest first)."""
+
     def _score(ex: Dict[str, Any]) -> float:
         s = ex.get(score_field)
         if s is not None:
@@ -182,7 +184,7 @@ def select_examples(
 
     Strategies: quality_weighted, diverse, balanced, curriculum.
     """
-    strategies = {
+    strategies: Dict[str, Callable[..., List[Dict[str, Any]]]] = {
         "quality_weighted": select_quality_weighted,
         "diverse": select_diverse,
         "balanced": select_balanced,

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Forge — Training Data Engine | Pugalenthi Magendran</title>
-  <meta name="description" content="Generates training data from documents, scores with LLM-as-judge, detects contamination, fine-tunes locally, and proves improvement with statistical significance.">
-  <meta property="og:title" content="Forge — Training Data Engine">
-  <meta property="og:description" content="End-to-end training data pipeline: generate, evaluate, fine-tune, benchmark. 184 tests, +16.8% ROUGE-1 gain.">
+  <title>Forge | Auditable Training Data Systems</title>
+  <meta name="description" content="Forge is a source-aware training data pipeline with explicit provenance, contamination checks, safe splits, and inspectable evaluation artifacts.">
+  <meta property="og:title" content="Forge | Auditable Training Data Systems">
+  <meta property="og:description" content="Source-aware generation, quality controls, contamination gates, and honest evaluation boundaries.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,478 +14,136 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Cursor Effects -->
-  <div class="cursor-dot" aria-hidden="true"></div>
-  <div class="cursor-ring" aria-hidden="true"></div>
-
-  <!-- Grain Overlay -->
-  <div class="grain-overlay" aria-hidden="true"></div>
-
-  <!-- Mouse Glow -->
-  <div class="mouse-glow" aria-hidden="true"></div>
-
-  <!-- Back to Top -->
-  <button class="back-to-top" aria-label="Back to top">
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-  </button>
-
-  <!-- ========== NAV ========== -->
-  <nav class="nav" id="nav">
+  <nav class="nav">
     <div class="nav-inner">
-      <a href="https://pugalenthimagendran.com/" class="nav-logo">P.</a>
+      <a href="index.html" class="nav-logo">F.</a>
       <div class="nav-links">
-        <a href="https://pugalenthimagendran.com/projects/" class="active">Projects</a>
-        <a href="https://pugalenthimagendran.com/#about">About</a>
-        <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-        <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-        <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-        <a href="https://pugalenthimagendran.com/#contact">Contact</a>
+        <a href="index.html" class="active">Forge</a>
+        <a href="overview.html">Overview</a>
+        <a href="technical.html">Technical</a>
+        <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
       </div>
-      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
-        <span></span>
-        <span></span>
-      </button>
     </div>
   </nav>
 
-  <!-- Mobile Nav Overlay -->
-  <nav class="nav-mobile" id="nav-mobile" aria-label="Mobile navigation">
-    <a href="https://pugalenthimagendran.com/projects/">Projects</a>
-    <a href="https://pugalenthimagendran.com/#about">About</a>
-    <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-    <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-    <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-    <a href="https://pugalenthimagendran.com/#contact">Contact</a>
-  </nav>
-
-  <!-- ========== MODE BAR ========== -->
   <div class="mode-bar">
     <h1>Forge</h1>
     <div class="mode-bar-right">
       <div class="tab-group">
-        <a href="index.html" class="active">Demo</a>
+        <a href="index.html" class="active">Evidence</a>
         <a href="overview.html">Overview</a>
         <a href="technical.html">Technical</a>
       </div>
-      <a href="https://github.com/pugalenthi0928/training-data-factory" target="_blank" rel="noopener" class="mode-bar-github">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
-      </a>
+      <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
     </div>
   </div>
 
   <main>
-
-  <!-- ========== HERO ========== -->
-  <section class="hero">
-    <h1>Training Data Engine That <em>Proves Its Own Worth</em></h1>
-    <p class="subtitle">
-      Forge generates training data from documents, evaluates it with rubric-based scoring,
-      detects benchmark contamination, fine-tunes a model locally, and measures improvement
-      with statistical significance. End to end, one command.
-    </p>
-
-    <div class="grid-3" style="max-width: 640px; margin: 0 auto;">
-      <div class="stat">
-        <span class="number">200</span>
-        <span class="label">Examples generated</span>
+    <section class="hero">
+      <h1>Build training data you can <em>audit.</em></h1>
+      <p class="subtitle">
+        Forge carries source identity through generation, quality checks, contamination screening,
+        source-grouped splitting, fine-tuning, and evaluation. Every important boundary is visible.
+      </p>
+      <div class="grid-3" style="max-width: 760px; margin: 0 auto;">
+        <div class="stat">
+          <span class="number">0</span>
+          <span class="label">Allowed source overlap</span>
+        </div>
+        <div class="stat">
+          <span class="number">70%</span>
+          <span class="label">Coverage gate</span>
+        </div>
+        <div class="stat">
+          <span class="number green">1 cmd</span>
+          <span class="label">Offline smoke run</span>
+        </div>
       </div>
-      <div class="stat">
-        <span class="number">4.77</span>
-        <span class="label">Avg judge score</span>
+    </section>
+
+    <div class="container wide">
+      <div class="callout">
+        <strong>Evaluation status:</strong> the pipeline is implemented and verified, but the historical
+        model run is not treated as independent performance evidence. An independently authored
+        benchmark and a human-reviewed subset are release gates, not footnotes.
       </div>
-      <div class="stat">
-        <span class="number green">+16.8%</span>
-        <span class="label">ROUGE-1 gain</span>
+
+      <h2>Trust boundaries first</h2>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Stable provenance</h3>
+          <p>Document and chunk IDs are derived from content, so the same source keeps the same identity across runs.</p>
+        </div>
+        <div class="card">
+          <h3>Source-safe split</h3>
+          <p>A complete source document belongs to either train or test. Missing provenance stops the run.</p>
+        </div>
+        <div class="card">
+          <h3>Mandatory gate</h3>
+          <p>A live run requires benchmark data. Missing inputs or flagged contamination return a failing exit code.</p>
+        </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ========== CONTENT ========== -->
-  <div class="container wide">
-
-  <!-- Pipeline visualization -->
-  <h2>Pipeline</h2>
-  <div class="pipeline">
-    <div class="step"><span class="num">1</span>Generate</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">2</span>Quality</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">3</span>Dedup</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">4</span>Judge</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">5</span>Contamination</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">6</span>Difficulty</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">7</span>Split</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">8</span>Fine-tune</div>
-    <span class="arrow">&#8594;</span>
-    <div class="step"><span class="num">9</span>Benchmark</div>
-  </div>
-
-  <hr>
-
-  <!-- Key numbers -->
-  <h2>Results from a Real Run</h2>
-  <p>Pipeline executed on 3 technical ML documents (~7,500 words total). Generated 200 training
-    examples across 4 task types, evaluated every one, trained a 0.5B model locally, and
-    benchmarked the result.</p>
-
-  <div class="grid-3">
-    <div class="card stat">
-      <span class="number" style="color: var(--accent);">200</span>
-      <span class="label">Examples generated</span>
-    </div>
-    <div class="card stat">
-      <span class="number" style="color: var(--accent);">4.77</span>
-      <span class="label">Avg judge score (out of 5)</span>
-    </div>
-    <div class="card stat">
-      <span class="number green">+16.8%</span>
-      <span class="label">ROUGE-1 improvement</span>
-    </div>
-  </div>
-
-  <div class="grid-2" style="margin-top: 0.5rem;">
-    <div class="card stat">
-      <span class="number">0</span>
-      <span class="label">Duplicates found</span>
-    </div>
-    <div class="card stat">
-      <span class="number green">p = 0.0</span>
-      <span class="label">Statistical significance</span>
-    </div>
-  </div>
-
-  <hr>
-
-  <!-- Benchmark comparison -->
-  <h2>Base Model vs Fine-Tuned</h2>
-  <p>Qwen 2.5 0.5B, before and after LoRA fine-tuning on the generated data.
-    40 held-out test examples. Significance tested with paired bootstrap (1000 resamples).</p>
-
-  <div class="bar-chart">
-    <div class="bar-row">
-      <span class="bar-label">ROUGE-1</span>
-      <div class="bar-track">
-        <div class="bar-fill base" style="width: 41.8%;">0.418</div>
+      <h2>Pipeline</h2>
+      <div class="pipeline">
+        <div class="step"><span class="num">1</span>Provenance</div>
+        <span class="arrow">&#8594;</span>
+        <div class="step"><span class="num">2</span>Generate</div>
+        <span class="arrow">&#8594;</span>
+        <div class="step"><span class="num">3</span>Quality</div>
+        <span class="arrow">&#8594;</span>
+        <div class="step"><span class="num">4</span>Dedup</div>
+        <span class="arrow">&#8594;</span>
+        <div class="step"><span class="num">5</span>Judge</div>
+        <span class="arrow">&#8594;</span>
+        <div class="step"><span class="num">6</span>Contamination</div>
+        <span class="arrow">&#8594;</span>
+        <div class="step"><span class="num">7</span>Source split</div>
+        <span class="arrow">&#8594;</span>
+        <div class="step"><span class="num">8</span>Evaluate</div>
       </div>
-      <span class="bar-delta"></span>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label"></span>
-      <div class="bar-track">
-        <div class="bar-fill tuned" style="width: 58.6%;">0.586</div>
+
+      <h2>Evidence a run leaves behind</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Split manifest</h3>
+          <p>Requested and achieved fractions, source counts, overlap results, seed, and SHA-256 hashes for input, train, and test artifacts.</p>
+        </div>
+        <div class="card">
+          <h3>Evaluation report</h3>
+          <p>Paired deltas, a correctly named randomization test, a bootstrap interval, seed, and resample count.</p>
+        </div>
+        <div class="card">
+          <h3>Contamination report</h3>
+          <p>Benchmarks loaded, index size, flagged records, matching n-grams, and aggregate contamination rate.</p>
+        </div>
+        <div class="card">
+          <h3>Execution log</h3>
+          <p>Command, status, duration, configuration, and intermediate artifacts for each required stage.</p>
+        </div>
       </div>
-      <span class="bar-delta">+16.8%</span>
-    </div>
 
-    <div class="bar-row" style="margin-top: 0.6rem;">
-      <span class="bar-label">ROUGE-2</span>
-      <div class="bar-track">
-        <div class="bar-fill base" style="width: 36.9%;">0.185</div>
-      </div>
-      <span class="bar-delta"></span>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label"></span>
-      <div class="bar-track">
-        <div class="bar-fill tuned" style="width: 62.3%;">0.311</div>
-      </div>
-      <span class="bar-delta">+12.7%</span>
-    </div>
-
-    <div class="bar-row" style="margin-top: 0.6rem;">
-      <span class="bar-label">ROUGE-L</span>
-      <div class="bar-track">
-        <div class="bar-fill base" style="width: 38.5%;">0.289</div>
-      </div>
-      <span class="bar-delta"></span>
-    </div>
-    <div class="bar-row">
-      <span class="bar-label"></span>
-      <div class="bar-track">
-        <div class="bar-fill tuned" style="width: 55.6%;">0.417</div>
-      </div>
-      <span class="bar-delta">+12.9%</span>
-    </div>
-  </div>
-
-  <p style="font-size: 0.82rem; color: var(--text-tertiary);">
-    Gray = base model. Orange = fine-tuned. Green = improvement delta.
-  </p>
-
-  <hr>
-
-  <!-- Training dynamics -->
-  <h2>Training Dynamics</h2>
-  <div class="grid-2">
-    <div class="card">
-      <h3>Loss Curve</h3>
-      <table>
-        <tr><th>Iter</th><th>Train Loss</th><th>Event</th></tr>
-        <tr><td>1</td><td>-</td><td>Val loss: 2.345</td></tr>
-        <tr><td>5</td><td>1.922</td><td></td></tr>
-        <tr><td>20</td><td>1.245</td><td></td></tr>
-        <tr><td>40</td><td>0.783</td><td>Checkpoint saved</td></tr>
-        <tr><td>60</td><td>0.350</td><td></td></tr>
-        <tr><td>80</td><td>0.346</td><td>Checkpoint saved</td></tr>
-        <tr><td>100</td><td>0.176</td><td></td></tr>
-        <tr><td>120</td><td>0.144</td><td>Val loss: 0.730</td></tr>
-      </table>
-    </div>
-    <div class="card">
-      <h3>Configuration</h3>
-      <table>
-        <tr><td>Model</td><td>Qwen 2.5 0.5B Instruct</td></tr>
-        <tr><td>Method</td><td>LoRA (rank 8, 16 layers)</td></tr>
-        <tr><td>Trainable params</td><td>2.9M / 494M (0.59%)</td></tr>
-        <tr><td>Training time</td><td>5 minutes (Apple Silicon)</td></tr>
-        <tr><td>Peak memory</td><td>9.0 GB</td></tr>
-        <tr><td>Epochs</td><td>3</td></tr>
-        <tr><td>Batch size</td><td>4</td></tr>
-        <tr><td>Learning rate</td><td>1e-4</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <hr>
-
-  <!-- Data quality breakdown -->
-  <h2>Data Quality Breakdown</h2>
-  <div class="grid-2">
-    <div class="card">
-      <h3>LLM-as-Judge Scores</h3>
-      <p>GPT-4.1-mini scored every example on 4 dimensions:
-        faithfulness, helpfulness, complexity, coherence.</p>
-      <table>
-        <tr><th>Rating</th><th>Count</th><th>Fraction</th></tr>
-        <tr><td>5 / 5</td><td>173</td><td>86%</td></tr>
-        <tr><td>4 / 5</td><td>27</td><td>14%</td></tr>
-        <tr><td>3 / 5 or below</td><td>0</td><td>0%</td></tr>
-      </table>
-    </div>
-    <div class="card">
-      <h3>Difficulty Distribution</h3>
-      <p>Heuristic calibration based on output length, vocabulary complexity,
-        and reasoning depth.</p>
-      <table>
-        <tr><th>Level</th><th>Count</th><th>Fraction</th></tr>
-        <tr><td>Easy</td><td>2</td><td>1%</td></tr>
-        <tr><td>Medium</td><td>76</td><td>38%</td></tr>
-        <tr><td>Hard</td><td>122</td><td>61%</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <hr>
-
-  <!-- Sample examples -->
-  <h2>Sample Generated Examples</h2>
-  <p>Real examples from the pipeline output, unedited.</p>
-
-  <div class="example-tabs">
-    <button class="active" onclick="showTab('qa')">Q&A</button>
-    <button onclick="showTab('summary')">Summary</button>
-    <button onclick="showTab('instruction')">Instruction</button>
-    <button onclick="showTab('cot')">Chain of Thought</button>
-  </div>
-
-  <div id="tab-qa" class="example-panel active">
-    <div class="field-label">Input</div>
-    <div class="field-value">Read the following passage and generate ONE useful question and its answer.
-
-Passage: Common evaluation metrics include: Accuracy (fraction of correct predictions), Precision (fraction of positive predictions that are correct), Recall (fraction of actual positives correctly identified), and F1 Score (harmonic mean of precision and recall).</div>
-    <div class="field-label">Output</div>
-    <div class="field-value">Question: What are some common evaluation metrics used for classification tasks, and what do they measure?
-
-Answer: Common evaluation metrics for classification tasks include Accuracy, which measures the fraction of correct predictions; Precision, which measures the fraction of positive predictions that are correct; Recall, which measures the fraction of actual positives correctly identified; and F1 Score, which is the harmonic mean of precision and recall.</div>
-    <div class="meta">Judge score: 4.75 / 5 | Difficulty: medium</div>
-  </div>
-
-  <div id="tab-summary" class="example-panel">
-    <div class="field-label">Input</div>
-    <div class="field-value">Summarise the following text:
-
-The authors introduce FLAIR, a pre-trained vision-language model for universal retinal fundus image understanding. They compiled 38 open-access fundus imaging datasets, encompassing 101 target conditions and 288,307 images.</div>
-    <div class="field-label">Output</div>
-    <div class="field-value">The text discusses the challenges of applying vision-language models to medical imaging due to domain shifts and complex expert knowledge. To address this, the authors introduce FLAIR, a pre-trained vision-language model designed for comprehensive retinal fundus image analysis. They compiled 38 open-access fundus imaging datasets, encompassing 101 target conditions and 288,307 images. FLAIR incorporates expert domain knowledge through descriptive textual prompts during pre-training and zero-shot evaluation.</div>
-    <div class="meta">Judge score: 4.75 / 5 | Difficulty: medium</div>
-  </div>
-
-  <div id="tab-instruction" class="example-panel">
-    <div class="field-label">Input</div>
-    <div class="field-value">Based on the following passage, generate a realistic user instruction and then write the ideal response.
-
-Passage: Foundation models are large-scale machine learning models designed to be adaptable across a wide range of downstream tasks.</div>
-    <div class="field-label">Output</div>
-    <div class="field-value">INSTRUCTION: Can you explain what foundation models are and why they are important in fields like computer vision and natural language processing?
-
-RESPONSE: Foundation models are large-scale machine learning models that are designed to be adaptable across a wide range of downstream tasks. Unlike models trained for a specific purpose, foundation models serve as a versatile base that can be fine-tuned or adapted to various applications.</div>
-    <div class="meta">Judge score: 4.75 / 5 | Difficulty: hard</div>
-  </div>
-
-  <div id="tab-cot" class="example-panel">
-    <div class="field-label">Input</div>
-    <div class="field-value">Based on the following passage, create a question that requires multi-step reasoning to answer. Then provide a detailed chain-of-thought answer.
-
-Passage: The Chinchilla scaling laws suggest that a model with N parameters should be trained on approximately 20N tokens for optimal compute efficiency.</div>
-    <div class="field-label">Output</div>
-    <div class="field-value">QUESTION: If a Transformer model has 5 billion parameters, how many training tokens should it be trained on for optimal compute efficiency, and why does this approach differ from previous practices?
-
-REASONING:
-Step 1: Identify the relationship. The passage states a model with N parameters should be trained on approximately 20N tokens.
-Step 2: Calculate. For N = 5 billion: 20 x 5 billion = 100 billion tokens.
-Step 3: Compare to previous practice. Earlier approaches trained increasingly large models on fixed datasets, rather than scaling data proportionally.
-
-ANSWER: 100 billion tokens, because the Chinchilla laws show model size and training data should scale together.</div>
-    <div class="meta">Judge score: 5.0 / 5 | Difficulty: hard</div>
-  </div>
-
-  <hr>
-
-  <!-- Pipeline timing -->
-  <h2>Pipeline Timing</h2>
-  <table>
-    <tr><th>Step</th><th>Time</th><th>Notes</th></tr>
-    <tr><td>Generate (GPT-4.1-mini)</td><td>9 min 31 sec</td><td>200 examples, 4 task types, 162 chunks</td></tr>
-    <tr><td>Quality scoring</td><td>0.6 sec</td><td>Heuristic flags (no API calls)</td></tr>
-    <tr><td>Deduplication</td><td>0.4 sec</td><td>Hash-based, zero duplicates</td></tr>
-    <tr><td>LLM-as-Judge</td><td>17 min 5 sec</td><td>200 examples x 4 scoring dimensions</td></tr>
-    <tr><td>Difficulty calibration</td><td>0.6 sec</td><td>Heuristic (no API calls)</td></tr>
-    <tr><td>Train/test split</td><td>0.3 sec</td><td>80/20 stratified by task type</td></tr>
-    <tr><td>LoRA fine-tuning</td><td>5 min 0 sec</td><td>120 iterations, Qwen 2.5 0.5B, Apple Silicon</td></tr>
-    <tr><td>Benchmark</td><td>2 min 25 sec</td><td>40 test examples, base + fine-tuned inference</td></tr>
-    <tr><td><strong>Total</strong></td><td><strong>~35 min</strong></td><td>Cost: ~$5</td></tr>
-  </table>
-
-  <hr>
-
-  <!-- Quick start -->
-  <h2>Try It</h2>
-  <pre><code>git clone https://github.com/pugalenthi0928/training-data-factory.git
+      <hr>
+      <h2>Start with the smoke run</h2>
+      <pre><code>git clone https://github.com/pugalenthi0928/training-data-factory.git
 cd training-data-factory
 make install
-
-# Dry run (no API key needed)
-make forge
-
-# Full pipeline
-export OPENAI_API_KEY=sk-...
-make forge-live</code></pre>
-
-  <p style="margin-top: 2rem; font-size: 0.9rem; color: var(--text-tertiary);">
-    Read the <a href="overview.html">overview</a> for a plain-English explanation, or
-    the <a href="technical.html">technical deep-dive</a> for implementation details.
-  </p>
-
-  </div>
-
-  <div class="gradient-divider"></div>
-
+make forge</code></pre>
+      <p>
+        The smoke run uses a dummy model and a synthetic contamination fixture. It verifies mechanics,
+        not model quality. Read the <a href="overview.html">project overview</a> or inspect the
+        <a href="technical.html">technical controls</a> before interpreting any output.
+      </p>
+    </div>
   </main>
 
-  <!-- ========== FOOTER ========== -->
   <footer class="footer">
-    <div class="container" style="max-width: 1200px;">
-      <div class="footer-top">
-        <div class="footer-brand">
-          <a href="https://pugalenthimagendran.com/" class="footer-logo">P.</a>
-          <p class="footer-tagline">Building intelligent systems.</p>
-        </div>
-        <nav class="footer-nav">
-          <a href="https://pugalenthimagendran.com/projects/">Projects</a>
-          <a href="https://pugalenthimagendran.com/#about">About</a>
-          <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-          <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-          <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-          <a href="https://pugalenthimagendran.com/#contact">Contact</a>
-        </nav>
-      </div>
+    <div class="container">
       <div class="footer-bottom">
-        <span class="footer-copyright">&copy; 2026 Pugalenthi Magendran</span>
-        <span class="footer-credit">Built with <span>vanilla HTML, CSS & JS</span></span>
+        <span>Forge by Pugalenthi Magendran</span>
+        <span>Source-aware by design</span>
       </div>
     </div>
   </footer>
-
-<script>
-// Tab switching
-function showTab(name) {
-  document.querySelectorAll('.example-panel').forEach(function(el) {
-    el.classList.remove('active');
-  });
-  document.querySelectorAll('.example-tabs button').forEach(function(el) {
-    el.classList.remove('active');
-  });
-  document.getElementById('tab-' + name).classList.add('active');
-  event.target.classList.add('active');
-}
-
-// Mobile nav toggle
-(function() {
-  var toggle = document.querySelector('.nav-toggle');
-  var mobile = document.getElementById('nav-mobile');
-  if (!toggle || !mobile) return;
-  toggle.addEventListener('click', function() {
-    var open = mobile.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', open);
-  });
-  mobile.querySelectorAll('a').forEach(function(a) {
-    a.addEventListener('click', function() {
-      mobile.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-    });
-  });
-})();
-
-// Cursor effects
-(function() {
-  var dot = document.querySelector('.cursor-dot');
-  var ring = document.querySelector('.cursor-ring');
-  if (!dot || !ring || window.matchMedia('(pointer: coarse)').matches) {
-    if (dot) dot.style.display = 'none';
-    if (ring) ring.style.display = 'none';
-    return;
-  }
-  var mx = 0, my = 0, rx = 0, ry = 0;
-  document.addEventListener('mousemove', function(e) {
-    mx = e.clientX; my = e.clientY;
-    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-  });
-  (function animate() {
-    rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15;
-    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-    requestAnimationFrame(animate);
-  })();
-})();
-
-// Mouse glow
-(function() {
-  var glow = document.querySelector('.mouse-glow');
-  if (!glow || window.matchMedia('(pointer: coarse)').matches) return;
-  document.addEventListener('mousemove', function(e) {
-    glow.style.left = e.clientX + 'px';
-    glow.style.top = e.clientY + 'px';
-  });
-})();
-
-// Back to top
-(function() {
-  var btn = document.querySelector('.back-to-top');
-  if (!btn) return;
-  window.addEventListener('scroll', function() {
-    btn.classList.toggle('visible', window.scrollY > 400);
-  });
-  btn.addEventListener('click', function() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-})();
-</script>
-
 </body>
 </html>

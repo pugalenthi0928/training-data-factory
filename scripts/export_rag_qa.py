@@ -76,10 +76,7 @@ def export_rag_qa(
     if task_name:
         df = df[df["task_name"] == task_name]
 
-    df = df[
-        (df["question"].str.strip() != "")
-        & (df["answer"].str.strip() != "")
-    ]
+    df = df[(df["question"].str.strip() != "") & (df["answer"].str.strip() != "")]
 
     if df.empty:
         raise SystemExit("No QA rows available for export (question/answer empty).")
@@ -113,9 +110,7 @@ def export_rag_qa(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Export QA rows into a RAG-friendly schema."
-    )
+    parser = argparse.ArgumentParser(description="Export QA rows into a RAG-friendly schema.")
     parser.add_argument(
         "--input",
         required=True,

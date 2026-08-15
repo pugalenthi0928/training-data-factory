@@ -13,6 +13,7 @@ from training_data_robo.io import load_jsonl, write_jsonl
 
 _PUNCT = str.maketrans("", "", string.punctuation)
 
+
 def bow_signature(text: str) -> str:
     """
     Bag-of-words signature:
@@ -25,6 +26,7 @@ def bow_signature(text: str) -> str:
     toks.sort()
     return " ".join(toks)
 
+
 def ensure_flags(row: Dict[str, Any]) -> None:
     if "quality_flags" not in row or row["quality_flags"] in ("", None):
         row["quality_flags"] = []
@@ -33,6 +35,7 @@ def ensure_flags(row: Dict[str, Any]) -> None:
             row["quality_flags"] = list(row["quality_flags"])
         except Exception:
             row["quality_flags"] = [str(row["quality_flags"])]
+
 
 def dedupe_hash(rows: List[Dict[str, Any]], text_field: str) -> List[Dict[str, Any]]:
     seen = set()
@@ -47,24 +50,28 @@ def dedupe_hash(rows: List[Dict[str, Any]], text_field: str) -> List[Dict[str, A
         kept.append(r)
     return kept
 
+
 def get_embeddings_openai(texts: List[str], model: str):
     # Lazy import so CI without OpenAI still passes
     import numpy as np
     from openai import OpenAI
+
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY missing")
     client = OpenAI()
     vecs = []
     for i in range(0, len(texts), 100):
-        batch = texts[i:i+100]
+        batch = texts[i : i + 100]
         res = client.embeddings.create(model=model, input=batch)
         vecs.extend([d.embedding for d in res.data])
     arr = np.array(vecs, dtype="float32")
     norms = (arr**2).sum(1, keepdims=True) ** 0.5 + 1e-12
     return arr / norms
 
+
 def dedupe_emb(rows: List[Dict[str, Any]], text_field: str, model: str, threshold: float) -> List[Dict[str, Any]]:
     import numpy as np
+
     texts = [str(r.get(text_field, "")) for r in rows]
     if not texts:
         return rows
@@ -87,12 +94,13 @@ def dedupe_emb(rows: List[Dict[str, Any]], text_field: str, model: str, threshol
             kept_idx.append(i)
     return [rows[i] for i in range(len(rows)) if i not in dup]
 
+
 def main():
     ap = argparse.ArgumentParser(description="Near-duplicate removal (embeddings or hash).")
     ap.add_argument("--input", required=True)
     ap.add_argument("--output", required=True)
     ap.add_argument("--text-field", default="output_text")
-    ap.add_argument("--method", choices=["emb","hash"], default="emb")
+    ap.add_argument("--method", choices=["emb", "hash"], default="emb")
     ap.add_argument("--threshold", type=float, default=0.92)
     ap.add_argument("--emb-model", default="text-embedding-3-small")
     ap.add_argument("--max-examples", type=int, default=None)
@@ -109,14 +117,20 @@ def main():
     if args.method == "hash":
         kept = dedupe_hash(rows, args.text_field)
         write_jsonl(out_path, kept)
-        print(json.dumps({
-            "method": "hash_bow",
-            "input_rows": len(rows),
-            "kept_rows": len(kept),
-            "dropped_duplicates": len(rows) - len(kept),
-            "text_field": args.text_field,
-            "output_path": str(out_path),
-        }, indent=2, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "method": "hash_bow",
+                    "input_rows": len(rows),
+                    "kept_rows": len(kept),
+                    "dropped_duplicates": len(rows) - len(kept),
+                    "text_field": args.text_field,
+                    "output_path": str(out_path),
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
         return
 
     try:
@@ -130,16 +144,23 @@ def main():
         print(f"[compute_dedupe] Embedding path failed ({e}); used hash fallback.", flush=True)
 
     write_jsonl(out_path, kept)
-    print(json.dumps({
-        "method": method_used,
-        "input_rows": len(rows),
-        "kept_rows": len(kept),
-        "dropped_duplicates": dropped,
-        "threshold": args.threshold,
-        "emb_model": args.emb_model,
-        "text_field": args.text_field,
-        "output_path": str(out_path),
-    }, indent=2, ensure_ascii=False))
+    print(
+        json.dumps(
+            {
+                "method": method_used,
+                "input_rows": len(rows),
+                "kept_rows": len(kept),
+                "dropped_duplicates": dropped,
+                "threshold": args.threshold,
+                "emb_model": args.emb_model,
+                "text_field": args.text_field,
+                "output_path": str(out_path),
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
+
 
 if __name__ == "__main__":
     main()

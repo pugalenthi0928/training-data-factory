@@ -1,14 +1,15 @@
-"""Lightweight experiment tracker — no MLflow dependency.
+"""Lightweight experiment tracker with no MLflow dependency.
 
 Each run creates a directory under ``runs/{run_id}/`` containing:
 
-- ``config.json`` — hyperparameters and settings
-- ``metrics.json`` — accumulated metrics (quality scores, training loss, …)
-- ``pipeline_log.json`` — step-by-step execution log
-- ``artifacts/`` — any saved files (model adapters, reports, …)
+- ``config.json``: hyperparameters and settings
+- ``metrics.json``: accumulated metrics such as quality scores and training loss
+- ``pipeline_log.json``: step-by-step execution log
+- ``artifacts/``: saved files such as model adapters and reports
 
 Supports comparing metrics across multiple runs.
 """
+
 from __future__ import annotations
 
 import json
@@ -82,9 +83,7 @@ class ExperimentTracker:
         )
 
         # Persist config
-        (run_dir / "config.json").write_text(
-            json.dumps(run_config, indent=2, default=str), encoding="utf-8"
-        )
+        (run_dir / "config.json").write_text(json.dumps(run_config, indent=2, default=str), encoding="utf-8")
 
         # Initialize empty metrics
         (run_dir / "metrics.json").write_text("{}\n", encoding="utf-8")
@@ -173,15 +172,17 @@ class ExperimentTracker:
                 if metrics_path.exists():
                     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
 
-                runs.append(RunInfo(
-                    run_id=config.get("run_id", run_dir.name),
-                    run_dir=run_dir,
-                    config=config,
-                    metrics=metrics,
-                    status=config.get("status", "unknown"),
-                    started_at=config.get("started_at", ""),
-                    completed_at=config.get("completed_at"),
-                ))
+                runs.append(
+                    RunInfo(
+                        run_id=config.get("run_id", run_dir.name),
+                        run_dir=run_dir,
+                        config=config,
+                        metrics=metrics,
+                        status=config.get("status", "unknown"),
+                        started_at=config.get("started_at", ""),
+                        completed_at=config.get("completed_at"),
+                    )
+                )
             except (json.JSONDecodeError, OSError):
                 logger.warning("Skipping corrupt run dir: %s", run_dir)
 

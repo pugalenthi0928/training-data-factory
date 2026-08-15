@@ -8,7 +8,7 @@ Fine-tuning offers several advantages over training from scratch: it requires fa
 
 ## Full Fine-Tuning vs. Parameter-Efficient Methods
 
-Full fine-tuning updates all model parameters during training. This provides maximum flexibility but requires significant GPU memory (the full model plus optimizer states must fit in memory) and risks catastrophic forgetting — the model losing its general capabilities as it specializes.
+Full fine-tuning updates all model parameters during training. This provides maximum flexibility but requires significant GPU memory (the full model plus optimizer states must fit in memory) and risks catastrophic forgetting, where the model loses its general capabilities as it specializes.
 
 Parameter-efficient fine-tuning (PEFT) methods update only a small fraction of parameters while keeping the rest frozen. The most popular PEFT methods include:
 
@@ -52,7 +52,7 @@ Each example should represent one complete interaction. Multi-turn conversations
 Before fine-tuning, validate your dataset:
 
 1. Remove duplicate or near-duplicate examples that would bias the model
-2. Check for contamination against evaluation benchmarks — if your training data overlaps with test data, benchmark results will be inflated
+2. Check for contamination against evaluation benchmarks. If your training data overlaps with test data, benchmark results will be inflated.
 3. Ensure consistent formatting across all examples
 4. Remove examples with obviously wrong or harmful outputs
 5. Balance the dataset across different categories or difficulty levels

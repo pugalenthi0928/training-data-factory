@@ -1,12 +1,12 @@
 /* ============================================
-   Forge Docs — Portfolio-Aligned Dark Theme
+   Forge Docs - Portfolio-Aligned Dark Theme
    ============================================ */
 
 /* --- Reset & Base --- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* Colors — mirrors portfolio design system */
+  /* Colors mirror the portfolio design system */
   --bg: #0F0E0D;
   --bg-alt: #191715;
   --surface: #1C1917;

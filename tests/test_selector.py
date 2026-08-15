@@ -1,4 +1,5 @@
 """Tests for data selection strategies."""
+
 from __future__ import annotations
 
 from training_data_robo.selector import (
@@ -14,14 +15,16 @@ def _make_examples(n: int = 20) -> list:
     tasks = ["qa_v1", "summary_v1", "cot_v1", "instruction_v1"]
     examples = []
     for i in range(n):
-        examples.append({
-            "id": str(i),
-            "task_name": tasks[i % len(tasks)],
-            "output_text": f"Answer {i} " + ("word " * (i + 5)),
-            "judge_avg_score": (i % 5) + 1,  # scores 1-5
-            "quality_score": 0.5 + (i % 5) * 0.1,
-            "difficulty": ["easy", "medium", "hard"][i % 3],
-        })
+        examples.append(
+            {
+                "id": str(i),
+                "task_name": tasks[i % len(tasks)],
+                "output_text": f"Answer {i} " + ("word " * (i + 5)),
+                "judge_avg_score": (i % 5) + 1,  # scores 1-5
+                "quality_score": 0.5 + (i % 5) * 0.1,
+                "difficulty": ["easy", "medium", "hard"][i % 3],
+            }
+        )
     return examples
 
 
@@ -78,6 +81,7 @@ class TestBalanced:
         tasks = [s["task_name"] for s in selected]
         # Each task should have 2 examples (8/4 = 2)
         from collections import Counter
+
         counts = Counter(tasks)
         assert all(c == 2 for c in counts.values())
 
@@ -129,5 +133,6 @@ class TestSelectExamples:
 
     def test_unknown_strategy_raises(self):
         import pytest
+
         with pytest.raises(ValueError, match="Unknown strategy"):
             select_examples([], 5, strategy="nonexistent")

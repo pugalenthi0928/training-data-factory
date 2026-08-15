@@ -1,4 +1,5 @@
 """Tests for consolidated JSONL I/O utilities."""
+
 from __future__ import annotations
 
 import json
@@ -10,9 +11,7 @@ from training_data_robo.io import count_jsonl_rows, iter_jsonl, load_jsonl, writ
 class TestLoadJsonl:
     def test_loads_valid_file(self, tmp_path: Path) -> None:
         path = tmp_path / "data.jsonl"
-        path.write_text(
-            '{"a": 1}\n{"b": 2}\n', encoding="utf-8"
-        )
+        path.write_text('{"a": 1}\n{"b": 2}\n', encoding="utf-8")
         records = load_jsonl(path)
         assert len(records) == 2
         assert records[0] == {"a": 1}

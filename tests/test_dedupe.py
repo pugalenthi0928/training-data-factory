@@ -9,12 +9,14 @@ def write_jsonl(p: Path, rows):
         for r in rows:
             f.write(json.dumps(r) + "\n")
 
+
 def read_jsonl(p: Path):
     out = []
     with p.open("r", encoding="utf-8") as f:
         for line in f:
             out.append(json.loads(line))
     return out
+
 
 def test_hash_dedupe(tmp_path: Path):
     inp = tmp_path / "data.jsonl"
@@ -28,7 +30,8 @@ def test_hash_dedupe(tmp_path: Path):
     write_jsonl(inp, rows)
     r = subprocess.run(
         [sys.executable, "scripts/compute_dedupe.py", "--input", str(inp), "--output", str(outp), "--method", "hash"],
-        capture_output=True, text=True
+        capture_output=True,
+        text=True,
     )
     assert r.returncode == 0, r.stderr
     kept = read_jsonl(outp)

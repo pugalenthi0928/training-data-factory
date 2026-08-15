@@ -1,4 +1,4 @@
-"""Forge Dashboard — Streamlit app for exploring pipeline runs, quality metrics,
+"""Forge Dashboard for exploring pipeline runs, quality metrics,
 training results, and experiment comparisons.
 
 Usage:
@@ -85,7 +85,7 @@ def load_pipeline_log(run_dir: Path) -> List[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 st.set_page_config(
-    page_title="Forge — Training Data Dashboard",
+    page_title="Forge - Training Data Dashboard",
     page_icon="🔥",
     layout="wide",
 )

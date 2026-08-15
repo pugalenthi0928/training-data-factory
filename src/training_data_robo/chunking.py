@@ -48,6 +48,7 @@ def _detect_section(text: str) -> Tuple[Optional[str], Optional[int]]:
 # Section-aware splitter
 # ---------------------------------------------------------------------------
 
+
 def _split_into_sections(text: str) -> List[Dict]:
     """Split text on markdown headings, preserving section metadata.
 
@@ -61,11 +62,13 @@ def _split_into_sections(text: str) -> List[Dict]:
     # First element is text before any heading
     preamble = parts[0].strip()
     if preamble:
-        sections.append({
-            "text": preamble,
-            "section_title": None,
-            "section_level": None,
-        })
+        sections.append(
+            {
+                "text": preamble,
+                "section_title": None,
+                "section_level": None,
+            }
+        )
 
     # Iterate over (hashes, title, body) triples
     i = 1
@@ -74,11 +77,13 @@ def _split_into_sections(text: str) -> List[Dict]:
         title = parts[i + 1].strip()
         body = parts[i + 2].strip() if i + 2 < len(parts) else ""
         full_text = f"{'#' * len(hashes)} {title}\n\n{body}".strip()
-        sections.append({
-            "text": full_text,
-            "section_title": title,
-            "section_level": len(hashes),
-        })
+        sections.append(
+            {
+                "text": full_text,
+                "section_title": title,
+                "section_level": len(hashes),
+            }
+        )
         i += 3
 
     return sections if sections else [{"text": text, "section_title": None, "section_level": None}]
@@ -87,6 +92,7 @@ def _split_into_sections(text: str) -> List[Dict]:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def simple_chunk_document(
     document: Document,

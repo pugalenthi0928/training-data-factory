@@ -3,365 +3,136 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Forge — Overview | Pugalenthi Magendran</title>
-  <meta name="description" content="Plain-English explanation of Forge: what it does, the problem it solves, and the approach it takes.">
+  <title>Forge Overview | Pugalenthi Magendran</title>
+  <meta name="description" content="A plain-language explanation of Forge, its evidence model, and its current release boundaries.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <div class="cursor-dot" aria-hidden="true"></div>
-  <div class="cursor-ring" aria-hidden="true"></div>
-  <div class="grain-overlay" aria-hidden="true"></div>
-  <div class="mouse-glow" aria-hidden="true"></div>
-
-  <button class="back-to-top" aria-label="Back to top">
-    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-  </button>
-
-  <nav class="nav" id="nav">
+  <nav class="nav">
     <div class="nav-inner">
-      <a href="https://pugalenthimagendran.com/" class="nav-logo">P.</a>
+      <a href="index.html" class="nav-logo">F.</a>
       <div class="nav-links">
-        <a href="https://pugalenthimagendran.com/projects/" class="active">Projects</a>
-        <a href="https://pugalenthimagendran.com/#about">About</a>
-        <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-        <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-        <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-        <a href="https://pugalenthimagendran.com/#contact">Contact</a>
+        <a href="index.html">Forge</a>
+        <a href="overview.html" class="active">Overview</a>
+        <a href="technical.html">Technical</a>
+        <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
       </div>
-      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
-        <span></span>
-        <span></span>
-      </button>
     </div>
-  </nav>
-
-  <nav class="nav-mobile" id="nav-mobile" aria-label="Mobile navigation">
-    <a href="https://pugalenthimagendran.com/projects/">Projects</a>
-    <a href="https://pugalenthimagendran.com/#about">About</a>
-    <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-    <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-    <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-    <a href="https://pugalenthimagendran.com/#contact">Contact</a>
   </nav>
 
   <div class="mode-bar">
     <h1>Forge</h1>
     <div class="mode-bar-right">
       <div class="tab-group">
-        <a href="index.html">Demo</a>
+        <a href="index.html">Evidence</a>
         <a href="overview.html" class="active">Overview</a>
         <a href="technical.html">Technical</a>
       </div>
-      <a href="https://github.com/pugalenthi0928/training-data-factory" target="_blank" rel="noopener" class="mode-bar-github">
-        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        GitHub
-      </a>
+      <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
     </div>
   </div>
 
   <main>
-  <div class="container">
+    <section class="hero">
+      <h1>What Forge does, and what it <em>does not claim.</em></h1>
+      <p class="subtitle">
+        A training data pipeline should make it easy to inspect where examples came from,
+        what crossed each quality gate, and how an evaluation was constructed.
+      </p>
+    </section>
 
-  <h1>What Forge Does (And Why It Matters)</h1>
-  <p class="subtitle">A plain-English explanation of the project, the problem it solves,
-    and the approach it takes. No machine learning background required.</p>
+    <div class="container">
+      <h2>The problem</h2>
+      <p>
+        A typical synthetic data demo ends after generation. It may show plausible examples,
+        but it does not answer whether the same source leaked across train and test, whether
+        evaluation material appeared in training, or whether a reported improvement survives
+        basic uncertainty analysis.
+      </p>
+      <p>
+        Forge treats those questions as pipeline requirements. It creates training examples,
+        but the repository is organised around traceability and failure conditions rather than
+        a single attractive metric.
+      </p>
 
-  <h2>The Analogy</h2>
+      <h2>The workflow</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>1. Identify the source</h3>
+          <p>Each document and chunk receives a deterministic content-derived identifier before examples are generated.</p>
+        </div>
+        <div class="card">
+          <h3>2. Generate and inspect</h3>
+          <p>Task templates produce candidate examples. Heuristics, deduplication, rubric scores, and difficulty tags add inspectable signals.</p>
+        </div>
+        <div class="card">
+          <h3>3. Check the benchmark boundary</h3>
+          <p>Generated input and output text are compared with benchmark text. A live pipeline run cannot omit this stage.</p>
+        </div>
+        <div class="card">
+          <h3>4. Split whole sources</h3>
+          <p>Examples from one source document stay together. The algorithm selects the whole-source subset closest to the requested row fraction.</p>
+        </div>
+        <div class="card">
+          <h3>5. Train and compare</h3>
+          <p>The current local path uses MLX LoRA. Base and adapted models are scored on paired examples.</p>
+        </div>
+        <div class="card">
+          <h3>6. Preserve the evidence</h3>
+          <p>Configuration, step logs, hashes, overlap checks, metrics, interval estimates, and seeds stay with the run.</p>
+        </div>
+      </div>
 
-  <p>
-    Think about how a school prepares students for an exam. The teacher does not hand them
-    a stack of random textbook pages and say "good luck." There is a process. The teacher
-    reads the material, designs practice exercises at different difficulty levels, reviews
-    those exercises for errors, removes any that are duplicates, checks that the practice
-    questions do not overlap with the actual exam, and then has the students study. After
-    studying, the teacher gives a test to measure how much they learned.
-  </p>
+      <h2>How to read the evidence</h2>
+      <table>
+        <tr><th>Artifact</th><th>What it supports</th><th>What it does not support</th></tr>
+        <tr><td>Smoke run</td><td>The pipeline can execute without paid APIs</td><td>Model quality or production readiness</td></tr>
+        <tr><td>Split manifest</td><td>No shared source or chunk identifiers</td><td>Semantic independence between related documents</td></tr>
+        <tr><td>N-gram screen</td><td>Detection of verbatim phrase overlap</td><td>Reliable detection of paraphrased leakage</td></tr>
+        <tr><td>Model judge</td><td>A repeatable rubric-based signal</td><td>A replacement for human assessment</td></tr>
+        <tr><td>Paired statistics</td><td>Uncertainty on one evaluation set</td><td>General capability or causal proof</td></tr>
+      </table>
 
-  <p>
-    Forge does exactly this, but for AI models instead of students.
-  </p>
+      <h2>Why the historical result is not the headline</h2>
+      <p>
+        The earlier experiment generated references through the same broad process used to
+        create training examples, and the generator and judge were not sufficiently independent.
+        A source-safe split improves the design, but it does not turn an internally generated
+        reference set into an external benchmark. The numbers remain useful for regression
+        analysis, not for claiming general improvement.
+      </p>
 
-  <p>
-    The "textbooks" are your documents. The "practice exercises" are training examples that
-    Forge generates automatically. The "teacher review" is a quality evaluation pipeline.
-    The "study session" is model fine-tuning. And the "before-and-after test" is a benchmark
-    that proves the training actually worked.
-  </p>
+      <div class="callout">
+        <strong>Release boundary:</strong> the next credible model result must use an independently
+        authored evaluation set, a documented human review protocol, and either multiple training
+        seeds or an equivalent uncertainty analysis.
+      </div>
 
-  <h2>The Problem</h2>
+      <h2>Who this is for</h2>
+      <p>
+        Forge is useful for engineers exploring source-grounded task generation, evaluation
+        integrity, reproducible ML workflows, and local fine-tuning. It is also a compact reference
+        for discussing leakage, contamination, judge bias, provenance, and uncertainty in an interview.
+      </p>
 
-  <p>
-    AI language models learn to perform specific tasks by studying examples. If you want a
-    model to answer medical questions, you show it thousands of medical Q&A pairs. If you
-    want it to summarize legal documents, you show it examples of legal summaries. These
-    examples are called training data, and their quality directly controls how well the
-    model performs.
-  </p>
-
-  <p>
-    The problem is that most people who build training data take shortcuts. They generate
-    a batch of question-answer pairs from their documents, skim through a handful to check
-    they look reasonable, and call it done. There is no systematic quality review, no check
-    for duplicate or contaminated data, no measurement of whether the data actually improves
-    anything. It is a "trust me, it's fine" approach.
-  </p>
-
-  <p>
-    This is like a teacher writing an exam prep booklet, never proofreading it, handing it
-    to students, and then claiming it helped without ever giving a test.
-  </p>
-
-  <h2>What Forge Does</h2>
-
-  <p>
-    Forge is a pipeline that takes documents as input and produces verified, high-quality
-    training data as output. It does not stop at generation. It evaluates, filters, and
-    ultimately proves that the data works by training a model and measuring the improvement.
-  </p>
-
-  <p>Here is each step, in order:</p>
-
-  <h3>Step 1: Read and break down the documents</h3>
-  <p>
-    Forge reads your source documents (text files, PDFs, web pages) and splits them into
-    smaller chunks. It does not split blindly by paragraph count. It looks at the structure
-    of the text, respecting section headers, lists, and tables, so that each chunk is a
-    coherent unit that makes sense on its own.
-  </p>
-
-  <h3>Step 2: Generate training exercises</h3>
-  <p>
-    For each chunk, Forge generates multiple types of training examples using a language
-    model (GPT-4.1-mini by default). Instead of just Q&A, it creates four types of exercises:
-  </p>
-  <ul style="margin-bottom: 1rem; padding-left: 1.5rem;">
-    <li><strong>Questions and answers</strong> that test comprehension of the material</li>
-    <li><strong>Summaries</strong> that condense the key points</li>
-    <li><strong>Instructions and responses</strong> that simulate real user requests</li>
-    <li><strong>Chain-of-thought reasoning</strong> that requires multi-step problem solving</li>
-  </ul>
-  <p>
-    This variety matters. A model trained on diverse exercise types becomes more versatile
-    than one trained only on Q&A pairs.
-  </p>
-
-  <h3>Step 3: Check for obvious quality issues</h3>
-  <p>
-    Forge runs each example through a set of heuristic checks: is the output empty? Is it
-    too short for the task type? Does it contain common refusal phrases like "as an AI language
-    model, I cannot..."? Is it repetitive? Each example gets a quality score and a list of
-    flags describing any issues found.
-  </p>
-
-  <h3>Step 4: Remove duplicates</h3>
-  <p>
-    Duplicate or near-duplicate examples bias the model toward certain patterns and waste
-    training budget. Forge identifies and removes duplicates using hash-based comparison.
-  </p>
-
-  <h3>Step 5: Have an AI reviewer grade every example</h3>
-  <p>
-    This is one of the most important steps. A separate language model (acting as a "judge")
-    reads each example and scores it on four dimensions:
-  </p>
-  <ul style="margin-bottom: 1rem; padding-left: 1.5rem;">
-    <li><strong>Faithfulness:</strong> Does the output accurately reflect the source material?</li>
-    <li><strong>Helpfulness:</strong> Would this example actually teach a model something useful?</li>
-    <li><strong>Complexity:</strong> Is the example substantive enough to be worth training on?</li>
-    <li><strong>Coherence:</strong> Is the output well-structured and easy to follow?</li>
-  </ul>
-  <p>
-    Each dimension gets a score from 1 to 5 with a written explanation. In the demo run,
-    the average score was 4.77 out of 5, and 86% of examples scored a perfect 5/5.
-  </p>
-
-  <h3>Step 6: Check for exam leakage</h3>
-  <p>
-    This is a problem that most training data projects ignore entirely. If your training
-    data accidentally overlaps with standard evaluation benchmarks (the tests used to measure
-    AI performance), then your benchmark results become meaningless. It is like giving
-    students the answer key before the exam and then claiming they aced it.
-  </p>
-  <p>
-    Forge checks for this by comparing the text of every training example against known
-    benchmark datasets using n-gram matching. Any overlap gets flagged.
-  </p>
-
-  <h3>Step 7: Tag difficulty levels</h3>
-  <p>
-    Each example gets classified as easy, medium, or hard based on characteristics like output
-    length, vocabulary complexity, and reasoning depth. This allows you to balance the training
-    set by difficulty or use curriculum-based training strategies where the model starts with
-    easier examples and progresses to harder ones.
-  </p>
-
-  <h3>Step 8: Split into training and test sets</h3>
-  <p>
-    The data is split into a training set (80%) and a held-out test set (20%). The split is
-    stratified, meaning each task type is represented equally in both sets. The test set is
-    never used for training. It exists only for evaluation.
-  </p>
-
-  <h3>Step 9: Train a model</h3>
-  <p>
-    Forge fine-tunes a small language model (Qwen 2.5 with 500 million parameters) locally
-    on your machine using LoRA, a technique that trains only a tiny fraction of the model's
-    parameters (0.59% in this case) while keeping the rest frozen. This runs entirely on Apple
-    Silicon hardware with no cloud GPU needed. In the demo run, training took 5 minutes and
-    used 9 GB of memory.
-  </p>
-
-  <h3>Step 10: Prove it worked</h3>
-  <p>
-    The final step runs both the original model and the fine-tuned model on the held-out test
-    set and compares their outputs against the reference answers. Forge computes ROUGE scores
-    (a standard metric that measures overlap between generated text and reference text) and
-    runs a statistical significance test to confirm the improvement is real and not due to
-    random chance.
-  </p>
-
-  <h2>The Results</h2>
-
-  <p>In the demo run:</p>
-
-  <table>
-    <tr><th>What was measured</th><th>Before training</th><th>After training</th><th>Change</th></tr>
-    <tr><td>ROUGE-1 (word overlap)</td><td>41.8%</td><td>58.6%</td><td>+16.8%</td></tr>
-    <tr><td>ROUGE-2 (phrase overlap)</td><td>18.5%</td><td>31.1%</td><td>+12.7%</td></tr>
-    <tr><td>ROUGE-L (longest match)</td><td>28.9%</td><td>41.7%</td><td>+12.9%</td></tr>
-  </table>
-
-  <p>
-    The significance test returned p = 0.0, meaning there is essentially zero probability
-    that this improvement happened by chance. The training data genuinely made the model better
-    at the target domain.
-  </p>
-
-  <h2>Why This Matters</h2>
-
-  <p>
-    Most training data projects end at step 2. They generate data and assume it is good.
-    Forge goes further in several ways that matter for real-world reliability:
-  </p>
-
-  <p>
-    <strong>Verification over assumption.</strong> Every example is scored by an independent
-    reviewer. You know exactly what your data quality looks like before you spend time
-    training on it.
-  </p>
-
-  <p>
-    <strong>Contamination awareness.</strong> Benchmark contamination is a widespread problem
-    in the field. Checking for it is straightforward, but almost nobody does it. Forge does.
-  </p>
-
-  <p>
-    <strong>Closed loop.</strong> The most convincing evidence that training data works is a
-    model that demonstrably improves after training on it. Forge closes this loop automatically,
-    with statistical significance testing to back up the claim.
-  </p>
-
-  <p>
-    <strong>Reproducibility.</strong> Every run produces a timestamped directory with the full
-    pipeline log, configuration, intermediate artifacts, and final results. You can compare
-    runs, inspect individual examples, and trace any output back to its source.
-  </p>
-
-  <hr>
-
-  <p style="font-size: 0.9rem; color: var(--text-tertiary);">
-    For implementation details, read the
-    <a href="technical.html">technical deep-dive</a>.
-    To see the numbers and sample data, check the <a href="index.html">demo page</a>.
-  </p>
-
-  </div>
-
-  <div class="gradient-divider"></div>
-
+      <hr>
+      <p>
+        Continue to the <a href="technical.html">technical implementation</a>, or inspect the
+        <a href="https://github.com/pugalenthi0928/training-data-factory">repository and tests</a>.
+      </p>
+    </div>
   </main>
 
   <footer class="footer">
-    <div class="container" style="max-width: 1200px;">
-      <div class="footer-top">
-        <div class="footer-brand">
-          <a href="https://pugalenthimagendran.com/" class="footer-logo">P.</a>
-          <p class="footer-tagline">Building intelligent systems.</p>
-        </div>
-        <nav class="footer-nav">
-          <a href="https://pugalenthimagendran.com/projects/">Projects</a>
-          <a href="https://pugalenthimagendran.com/#about">About</a>
-          <a href="https://pugalenthimagendran.com/#experience">Experience</a>
-          <a href="https://pugalenthimagendran.com/blog/">Blog</a>
-          <a href="https://pugalenthimagendran.com/ai-atlas/">AI Atlas</a>
-          <a href="https://pugalenthimagendran.com/#contact">Contact</a>
-        </nav>
-      </div>
+    <div class="container">
       <div class="footer-bottom">
-        <span class="footer-copyright">&copy; 2026 Pugalenthi Magendran</span>
-        <span class="footer-credit">Built with <span>vanilla HTML, CSS & JS</span></span>
+        <span>Forge by Pugalenthi Magendran</span>
+        <span>Claims follow evidence</span>
       </div>
     </div>
   </footer>
-
-<script>
-(function() {
-  var toggle = document.querySelector('.nav-toggle');
-  var mobile = document.getElementById('nav-mobile');
-  if (!toggle || !mobile) return;
-  toggle.addEventListener('click', function() {
-    var open = mobile.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', open);
-  });
-  mobile.querySelectorAll('a').forEach(function(a) {
-    a.addEventListener('click', function() {
-      mobile.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
-    });
-  });
-})();
-(function() {
-  var dot = document.querySelector('.cursor-dot');
-  var ring = document.querySelector('.cursor-ring');
-  if (!dot || !ring || window.matchMedia('(pointer: coarse)').matches) {
-    if (dot) dot.style.display = 'none';
-    if (ring) ring.style.display = 'none';
-    return;
-  }
-  var mx = 0, my = 0, rx = 0, ry = 0;
-  document.addEventListener('mousemove', function(e) {
-    mx = e.clientX; my = e.clientY;
-    dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-  });
-  (function animate() {
-    rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15;
-    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-    requestAnimationFrame(animate);
-  })();
-})();
-(function() {
-  var glow = document.querySelector('.mouse-glow');
-  if (!glow || window.matchMedia('(pointer: coarse)').matches) return;
-  document.addEventListener('mousemove', function(e) {
-    glow.style.left = e.clientX + 'px';
-    glow.style.top = e.clientY + 'px';
-  });
-})();
-(function() {
-  var btn = document.querySelector('.back-to-top');
-  if (!btn) return;
-  window.addEventListener('scroll', function() {
-    btn.classList.toggle('visible', window.scrollY > 400);
-  });
-  btn.addEventListener('click', function() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-})();
-</script>
-
 </body>
 </html>

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union
 
-from .ai_client import DummyLLMClient, OpenAILLMClient
+from .ai_client import BaseLLMClient, DummyLLMClient, OpenAILLMClient
 from .chunking import simple_chunk_document as chunk_document
 from .errors import TrainingDataBotError
 from .logging_config import get_logger
@@ -35,6 +35,7 @@ class TrainingDataBot:
         self.datasets: Dict[str, Dataset] = {}
 
         self.loader = UnifiedLoader()
+        self.llm_client: BaseLLMClient
 
         if self.settings.openai_api_key:
             self.llm_client = OpenAILLMClient(
@@ -47,9 +48,7 @@ class TrainingDataBot:
             )
         else:
             self.llm_client = DummyLLMClient()
-            self.logger.info(
-                "No OPENAI_API_KEY set; using DummyLLMClient (no external calls)."
-            )
+            self.logger.info("No OPENAI_API_KEY set; using DummyLLMClient (no external calls).")
 
         self.task_manager = TaskManager(self.llm_client)
         self.logger.info("TrainingDataBot initialized successfully.")
@@ -78,9 +77,7 @@ class TrainingDataBot:
         overlap: int = 100,
     ) -> None:
         if not self.documents:
-            raise TrainingDataBotError(
-                "No documents loaded. Did you call load_documents()?"
-            )
+            raise TrainingDataBotError("No documents loaded. Did you call load_documents()?")
 
         self.logger.info(
             "Chunking %d documents (max_chars=%d, overlap=%d)...",
@@ -113,9 +110,7 @@ class TrainingDataBot:
             raise TrainingDataBotError("No tasks provided to process_documents().")
 
         if not self.chunks:
-            raise TrainingDataBotError(
-                "No chunks found. Did you call chunk_documents()?"
-            )
+            raise TrainingDataBotError("No chunks found. Did you call chunk_documents()?")
 
         chunks_list = list(self.chunks.values())
         self.logger.info(
@@ -144,9 +139,7 @@ class TrainingDataBot:
         )
         return dataset.id
 
-    def _filter_and_dedup_examples(
-        self, examples: List[TrainingExample]
-    ) -> List[TrainingExample]:
+    def _filter_and_dedup_examples(self, examples: List[TrainingExample]) -> List[TrainingExample]:
         """
         Heuristic quality filter:
           - drop very short outputs (configurable via settings.min_output_chars)
@@ -292,9 +285,7 @@ class TrainingDataBot:
                     "chunk_id": ex.chunk_id,
                     "model_name": ex.model_name,
                     "task_version": ex.task_version,
-                    "created_at": ex.created_at.isoformat()
-                    if ex.created_at
-                    else None,
+                    "created_at": ex.created_at.isoformat() if ex.created_at else None,
                     "temperature": ex.temperature,
                     "metadata": ex.metadata,
                 }
