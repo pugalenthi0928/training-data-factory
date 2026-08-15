@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test coverage report forge forge-live dashboard clean
+.PHONY: install lint format typecheck test report forge forge-live dashboard clean
 
 install:
 	pip install -c constraints-dev.txt -e ".[dev]"
@@ -10,14 +10,14 @@ format:
 	ruff format src/ scripts/ tests/
 
 typecheck:
-	mypy src/training_data_robo/ --ignore-missing-imports
+	mypy src/forge/ src/training_data_robo/ --ignore-missing-imports
 
 test:
 	python -m py_compile app.py scripts/*.py
 	pytest
 
 coverage:
-	pytest --cov=training_data_robo --cov-report=term-missing
+	pytest --cov=forge --cov=training_data_robo --cov-report=term-missing
 
 report:
 	python scripts/plot_runs.py
@@ -37,7 +37,8 @@ forge-live:
 		--tasks qa,summary,instruction,cot \
 		--model gpt-4.1-mini \
 		--max-examples 200 \
-		--benchmark-file "$${FORGE_BENCHMARK_FILE}"
+		--benchmark-file "$${FORGE_BENCHMARK_FILE}" \
+		--skip-finetune
 
 dashboard:
 	streamlit run app.py

@@ -6,7 +6,7 @@
 
 Source-aware training data generation, quality checks, and evaluation workflows.
 
-Forge turns documents into task-specific examples, carries source provenance through the pipeline, prevents one source document from appearing in both train and test, checks generated data against a supplied benchmark, and records the artifacts needed to inspect a run.
+Forge turns documents into task-specific examples and then produces a verifiable dataset release. Every stage declares its inputs, outputs, configuration, model, prompt identity, and content-derived cache key. A run can resume after failure without trusting stale or modified artifacts.
 
 **[Run the browser demo](https://pugalenthi0928.github.io/training-data-factory/demo.html) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html) | [Engineering roadmap](docs/engineering-roadmap.md)**
 
@@ -14,7 +14,7 @@ The browser demo runs deterministic provenance, contamination, and source-safe s
 
 ## Current status
 
-Forge is in a technical hardening phase. The core pipeline and local MLX fine-tuning path are implemented. Source-safe splitting, mandatory contamination checks, deterministic provenance IDs, Ruff, Mypy, and Pytest are enforced in the repository.
+Forge is in a technical hardening phase. Verifiable releases and the canonical typed pipeline core are implemented. Source-safe splitting, mandatory lexical contamination checks, deterministic provenance IDs, content-verified resume, Ruff, Mypy, and Pytest are enforced in the repository.
 
 Historical model results are not presented as independent evidence. The earlier run used references derived from the same generation process, and the same model family was used for generation and judging. Those artifacts are retained for traceability, not as a headline performance claim.
 
@@ -31,25 +31,26 @@ Training data work is easy to demo and difficult to validate. Forge makes the tr
 | A split cannot be audited | The split manifest records counts, overlap checks, seed, and SHA-256 artifact hashes |
 | Evaluation data leaks into training | A supplied benchmark is mandatory and contamination can fail the run |
 | A statistical test is mislabeled | The benchmark reports a paired randomization test and a paired bootstrap confidence interval separately |
-| A failed stage is silently ignored | The one-command pipeline exits when a required stage fails |
+| A failed stage is silently ignored | Structured failure events are recorded and the run exits fail-closed |
+| A resumed run trusts stale files | Cache hits require the same stage contract, input hashes, configuration, and verified output hashes |
+| Two entry points behave differently | The `forge` CLI and Python API call the same typed stage graph |
 
 ## Pipeline
 
 ```mermaid
 flowchart LR
-    A[Source documents] --> B[Stable provenance]
+    A[Source documents] --> B[Ingest contract]
     B --> C[Chunk and generate]
-    C --> D[Quality and deduplication]
-    D --> E[Judge and difficulty]
+    C --> D[Quality and exact dedupe]
+    D --> E[Judge]
     E --> F[Contamination gate]
-    F --> G[Source-grouped split]
-    G --> H[Fine-tune]
-    H --> I[Held-out comparison]
-    G --> J[Split manifest]
-    I --> K[Metrics, interval, and test]
+    F --> G[Difficulty and selection]
+    G --> H[Source-grouped split]
+    H --> I[Release gates]
+    I --> J[Manifest and Croissant metadata]
 ```
 
-The held-out comparison is an internal regression check until the independent evaluation release is complete.
+The training and evaluation adapter contracts are defined, but the current release workflow stops at a verified dataset. Portable training and independent evaluation remain explicit later gates.
 
 ## Quick start
 
@@ -67,7 +68,9 @@ make forge
 Outputs are written to a timestamped directory under `runs/`, including:
 
 - `config.json`
+- `documents.jsonl`
 - `pipeline_log.json`
+- `pipeline_events.jsonl`
 - `contamination_report.json`
 - `split_manifest.json`
 - `train.jsonl`
@@ -83,6 +86,8 @@ python scripts/release_dataset.py \
   --verify
 ```
 
+Run the same command again with the same output directory to resume. Forge only reports a cache hit when the stage contract and inputs match and every cached output still has its recorded content hash. Use `--no-resume` to deliberately execute every stage again.
+
 ## Run with a real generator
 
 Provide your own independent benchmark file. Each JSONL record should contain text in a supported field such as `question`, `text`, `input`, or `context`.
@@ -93,7 +98,7 @@ export FORGE_BENCHMARK_FILE="/absolute/path/to/independent_eval.jsonl"
 make forge-live
 ```
 
-The live command fails if the benchmark is absent, cannot be loaded, or triggers the contamination threshold. Fine-tuning uses MLX and therefore requires compatible Apple Silicon for the current local path.
+The live command fails if the benchmark is absent, cannot be loaded, or triggers the contamination threshold. It creates a candidate dataset release. Portable training is intentionally outside this workflow until its backend and evaluation boundary can be tested in CI.
 
 ## Source-safe split
 
@@ -127,14 +132,18 @@ These statistics quantify uncertainty in a particular evaluation set. They do no
 ## Repository layout
 
 ```text
+src/forge/
+  contracts.py       Typed stage, artifact, model, prompt, training, and evaluation contracts
+  pipeline.py        Content-keyed execution, event evidence, verified cache, and resume
+  stages.py          Canonical ingest, generation, curation, contamination, and split stages
+  workflow.py        Shared API used by the CLI, tests, workers, and future service
+  cli.py             Installed `forge` command
+
 src/training_data_robo/
   models.py          Stable document, chunk, and example provenance
-  bot.py             High-level orchestration
-  quality.py         Deterministic quality checks
   contamination.py   N-gram overlap detection
   judge.py           Rubric-based model judging
-  selector.py        Quality, diversity, balance, and curriculum selection
-  pipeline.py        DAG execution, caching, and resume
+  selector.py        Selection strategies
   releases.py        Content-addressed release gates and Croissant metadata
 
 scripts/
@@ -149,6 +158,8 @@ tests/                    Unit, property, provenance, and integrity tests
 sample_docs/              Public smoke-test source documents
 sample_benchmarks/        Synthetic contamination mechanism fixture
 ```
+
+`training_data_robo` remains available as a compatibility package. New orchestration code should import `forge`. See the [migration guide](docs/migration-v1.md).
 
 ## Development checks
 
@@ -169,6 +180,7 @@ CI runs linting, format checks, type checking, syntax compilation, tests, and a 
 - The included smoke benchmark is synthetic and deliberately small.
 - The current local fine-tuning path is MLX-specific.
 - The hosted browser demo mirrors core controls but does not yet execute the Python pipeline.
+- Stage cache is local to one run directory. Durable shared caching belongs to the hosted architecture stage.
 
 ## Release criteria
 

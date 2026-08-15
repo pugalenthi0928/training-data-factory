@@ -18,7 +18,9 @@
     <div class="nav-inner">
       <a href="index.html" class="nav-logo">F.</a>
       <div class="nav-links">
-        <a href="https://github.com/pugalenthi0928/training-data-factory">Repository</a>
+        <a href="index.html" class="active">Forge</a>
+        <a href="overview.html">Overview</a>
+        <a href="technical.html">Technical</a>
         <a href="https://pugalenthi-magendran.pugalenthi2000.chatgpt.site/">Portfolio</a>
       </div>
     </div>
@@ -28,11 +30,11 @@
     <h1>Forge</h1>
     <div class="mode-bar-right">
       <div class="tab-group">
-        <a href="demo.html">Demo</a>
         <a href="index.html" class="active">Evidence</a>
         <a href="overview.html">Overview</a>
         <a href="technical.html">Technical</a>
       </div>
+      <a href="https://github.com/pugalenthi0928/training-data-factory" class="mode-bar-github">Repository</a>
     </div>
   </div>
 
@@ -41,12 +43,8 @@
       <h1>Build training data you can <em>audit.</em></h1>
       <p class="subtitle">
         Forge carries source identity through generation, quality checks, contamination screening,
-        source-grouped splitting, fine-tuning, and evaluation. Every important boundary is visible.
+        source-grouped splitting, and a content-addressed release. Every important boundary is visible.
       </p>
-      <div class="hero-actions">
-        <a href="demo.html" class="button primary">Run the browser demo</a>
-        <a href="https://github.com/pugalenthi0928/training-data-factory" class="button secondary">View repository</a>
-      </div>
       <div class="grid-3" style="max-width: 760px; margin: 0 auto;">
         <div class="stat">
           <span class="number">0</span>
@@ -73,8 +71,8 @@
       <h2>Trust boundaries first</h2>
       <div class="grid-3">
         <div class="card">
-          <h3>Stable provenance</h3>
-          <p>Document and chunk IDs are derived from content, so the same source keeps the same identity across runs.</p>
+          <h3>Verified resume</h3>
+          <p>A cache hit requires the same stage contract, input hashes, configuration, and unmodified output artifacts.</p>
         </div>
         <div class="card">
           <h3>Source-safe split</h3>
@@ -88,7 +86,7 @@
 
       <h2>Pipeline</h2>
       <div class="pipeline">
-        <div class="step"><span class="num">1</span>Provenance</div>
+        <div class="step"><span class="num">1</span>Ingest</div>
         <span class="arrow">&#8594;</span>
         <div class="step"><span class="num">2</span>Generate</div>
         <span class="arrow">&#8594;</span>
@@ -100,9 +98,9 @@
         <span class="arrow">&#8594;</span>
         <div class="step"><span class="num">6</span>Contamination</div>
         <span class="arrow">&#8594;</span>
-        <div class="step"><span class="num">7</span>Source split</div>
+        <div class="step"><span class="num">7</span>Select + split</div>
         <span class="arrow">&#8594;</span>
-        <div class="step"><span class="num">8</span>Evaluate</div>
+        <div class="step"><span class="num">8</span>Release</div>
       </div>
 
       <h2>Evidence a run leaves behind</h2>
@@ -112,16 +110,16 @@
           <p>Requested and achieved fractions, source counts, overlap results, seed, and SHA-256 hashes for input, train, and test artifacts.</p>
         </div>
         <div class="card">
-          <h3>Evaluation report</h3>
-          <p>Paired deltas, a correctly named randomization test, a bootstrap interval, seed, and resample count.</p>
+          <h3>Release manifest</h3>
+          <p>Source, benchmark, and artifact fingerprints, release gates, claim boundaries, and a deterministic release ID.</p>
         </div>
         <div class="card">
           <h3>Contamination report</h3>
           <p>Benchmarks loaded, index size, flagged records, matching n-grams, and aggregate contamination rate.</p>
         </div>
         <div class="card">
-          <h3>Execution log</h3>
-          <p>Command, status, duration, configuration, and intermediate artifacts for each required stage.</p>
+          <h3>Structured events</h3>
+          <p>Start, completion, failure, and cache-hit events with configuration, models, prompt identities, inputs, and outputs.</p>
         </div>
       </div>
 
