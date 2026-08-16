@@ -138,7 +138,7 @@ jobs:
                   with urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2) as response:
                       assert response.status == 200
                   with urllib.request.urlopen("http://127.0.0.1:8000/", timeout=2) as response:
-                      assert b"Run the real pipeline" in response.read()
+                      assert b"Training data release pipeline" in response.read()
                   break
               except Exception:
                   time.sleep(0.5)
