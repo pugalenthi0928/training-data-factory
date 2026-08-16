@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Run the real Forge training data pipeline and inspect its release evidence in the browser.">
-    <title>Forge | Verifiable training data releases</title>
+    <meta name="description" content="Run Forge's 12-stage training data pipeline and inspect its provenance, governance, split and release artifacts.">
+    <title>Forge | Training data release pipeline</title>
     <link rel="stylesheet" href="/static/style.css">
     <script src="/static/app.js" defer></script>
   </head>
@@ -21,49 +21,46 @@
         <a href="https://pugalenthi0928.github.io/training-data-factory/technical.html">System</a>
         <a href="/api/docs">API</a>
       </nav>
-      <div class="system-status"><span></span> deterministic public mode</div>
+      <div class="system-status"><span></span> public demo / deterministic adapters</div>
     </header>
 
     <main>
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow"><span>LIVE SYSTEM</span> FORGE.WORKFLOW.RUN_FORGE</p>
-          <h1 id="hero-title">One source pair.<br><em>Twelve controls.</em><br>One release.</h1>
-          <p class="hero-intro">Watch a real Python pipeline turn source material into a content-addressed training data release. Every stage leaves inspectable evidence.</p>
-          <a class="text-link" href="#workspace">Run the pipeline <span aria-hidden="true">↓</span></a>
+          <p class="eyebrow"><span>HOSTED DEMO</span> TRAINING DATA RELEASE PIPELINE</p>
+          <h1 id="hero-title">Training data,<br><em>from source to release.</em></h1>
+          <p class="hero-intro">Forge processes two source documents through governance, deduplication, contamination checks and source-isolated splitting. Run the workflow, inspect its decisions and download the release record.</p>
+          <a class="text-link" href="#workspace">Start a test run <span aria-hidden="true">↓</span></a>
         </div>
 
-        <div class="hero-system" aria-label="Forge system contract">
-          <div class="orbit orbit-one"></div>
-          <div class="orbit orbit-two"></div>
-          <div class="core-mark">
-            <span>12</span>
-            <small>STAGES</small>
+        <div class="hero-system" aria-label="Forge pipeline overview">
+          <div class="pipeline-card-header">
+            <span>PIPELINE</span>
+            <strong><i></i> READY</strong>
           </div>
-          <div class="orbit-label label-a">SOURCE</div>
-          <div class="orbit-label label-b">CURATE</div>
-          <div class="orbit-label label-c">ISOLATE</div>
-          <div class="orbit-label label-d">VERIFY</div>
-          <span class="signal signal-a"></span>
-          <span class="signal signal-b"></span>
-          <span class="signal signal-c"></span>
-          <span class="signal signal-d"></span>
+          <ol class="pipeline-map">
+            <li><span>01</span><div><strong>Source controls</strong><small>Ingest / rights / privacy</small></div><b>2 stages</b></li>
+            <li><span>02</span><div><strong>Curation</strong><small>Generate / validate / deduplicate</small></div><b>4 stages</b></li>
+            <li><span>03</span><div><strong>Evaluation controls</strong><small>Judge / contamination / selection</small></div><b>4 stages</b></li>
+            <li><span>04</span><div><strong>Release</strong><small>Source split / dataset profile</small></div><b>2 stages</b></li>
+          </ol>
+          <div class="pipeline-card-footer"><span>12 stages</span><span>7 release gates</span></div>
         </div>
 
         <div class="claim-ribbon">
-          <div><span>EXECUTION</span><strong>Real pipeline</strong></div>
-          <div><span>MODE</span><strong>Deterministic smoke</strong></div>
-          <div><span>OUTPUT</span><strong>Verified artifacts</strong></div>
-          <div><span>BOUNDARY</span><strong>No quality claim</strong></div>
+          <div><span>EXECUTION</span><strong>12-stage workflow</strong></div>
+          <div><span>RELEASE GATES</span><strong>7 enforced checks</strong></div>
+          <div><span>SPLIT POLICY</span><strong>Zero source overlap</strong></div>
+          <div><span>OUTPUT</span><strong>Downloadable evidence</strong></div>
         </div>
       </section>
 
       <section class="workspace" id="workspace" aria-labelledby="workspace-title">
         <div class="section-index"><span>01</span> RUN FORGE</div>
         <div class="workspace-heading">
-          <p class="eyebrow">THE RECRUITER TEST</p>
-          <h2 id="workspace-title">From input to evidence,<br><em>without a local setup.</em></h2>
-          <p>Select a controlled scenario or paste two documents. Forge runs the same typed workflow used by the CLI and test suite.</p>
+          <p class="eyebrow">HOSTED WORKFLOW</p>
+          <h2 id="workspace-title">Run Forge<br><em>in the browser.</em></h2>
+          <p>Choose a prepared scenario or provide two text documents. Public runs use the same Python workflow as the CLI and test suite, with deterministic adapters and bounded inputs.</p>
         </div>
 
         <div class="run-console">
@@ -71,8 +68,8 @@
             <div class="panel-heading">
               <span class="panel-number">A</span>
               <div>
-                <p>INPUT CONTRACT</p>
-                <h3 id="source-title">Choose source material</h3>
+                <p>SOURCE DOCUMENTS</p>
+                <h3 id="source-title">Choose an input</h3>
               </div>
             </div>
 
@@ -81,7 +78,7 @@
             <label class="custom-switch">
               <input type="checkbox" id="custom-toggle">
               <span class="switch-track"><i></i></span>
-              <span>Use my own source pair</span>
+              <span>Provide my own documents</span>
             </label>
 
             <div class="custom-inputs" id="custom-inputs" hidden>
@@ -99,7 +96,7 @@
             </div>
 
             <button class="run-button" id="run-button" type="button">
-              <span>Run the real pipeline</span>
+              <span>Run Forge</span>
               <i aria-hidden="true">↗</i>
             </button>
             <div id="run-message" class="run-message" role="status" aria-live="polite"></div>
@@ -109,8 +106,8 @@
             <div class="panel-heading">
               <span class="panel-number">B</span>
               <div>
-                <p>EXECUTION TRACE</p>
-                <h3 id="pipeline-title">Twelve declared stages</h3>
+                <p>PIPELINE STAGES</p>
+                <h3 id="pipeline-title">12-stage execution</h3>
               </div>
               <div class="pipeline-counter"><strong id="completed-count">0</strong><span>/ 12</span></div>
             </div>
@@ -121,14 +118,14 @@
       </section>
 
       <section class="result-section" id="result-section" hidden aria-labelledby="result-title">
-        <div class="section-index light"><span>02</span> RELEASE EVIDENCE</div>
+        <div class="section-index light"><span>02</span> RUN OUTPUT</div>
         <div class="result-header">
           <div>
             <p class="eyebrow">VERIFICATION PASSED</p>
-            <h2 id="result-title">A release you can<br><em>open and question.</em></h2>
+            <h2 id="result-title">Inspect the<br><em>release record.</em></h2>
           </div>
           <div class="release-identity">
-            <span>CONTENT ADDRESS</span>
+            <span>RELEASE ID</span>
             <code id="release-id">forge_pending</code>
             <small id="run-duration">Completed in 0.0 seconds</small>
           </div>
@@ -136,20 +133,20 @@
 
         <div class="metric-grid">
           <article><span>RECORDS</span><strong id="metric-records">0</strong><small>train + test</small></article>
-          <article><span>GATES</span><strong id="metric-gates">0</strong><small>passed</small></article>
+          <article><span>RELEASE GATES</span><strong id="metric-gates">0</strong><small>passed</small></article>
           <article><span>SOURCE OVERLAP</span><strong id="metric-overlap">0</strong><small>required result</small></article>
-          <article><span>CONTAMINATION</span><strong id="metric-contamination">0</strong><small>flagged records</small></article>
+          <article><span>CONTAMINATION FLAGS</span><strong id="metric-contamination">0</strong><small>records</small></article>
         </div>
 
         <div class="evidence-layout">
           <aside class="artifact-nav">
             <div class="artifact-heading">
-              <span>ARTIFACT INDEX</span>
+              <span>RELEASE FILES</span>
               <small id="artifact-count">0 FILES</small>
             </div>
             <div id="artifact-list" role="tablist" aria-label="Release artifacts"></div>
             <a class="download-button" id="download-button" href="#">
-              <span>Download evidence bundle</span><i>ZIP</i>
+              <span>Download all files</span><i>ZIP</i>
             </a>
           </aside>
           <div class="artifact-viewer">
@@ -158,34 +155,34 @@
               <code id="viewer-filename">release_manifest.json</code>
               <small id="viewer-size">0 KB</small>
             </div>
-            <pre id="artifact-content" tabindex="0">Select an artifact to inspect its contents.</pre>
+            <pre id="artifact-content" tabindex="0">Choose a file to inspect it.</pre>
           </div>
         </div>
       </section>
 
       <section class="boundary-section" aria-labelledby="boundary-title">
-        <div class="section-index"><span>03</span> CLAIM BOUNDARY</div>
+        <div class="section-index"><span>03</span> LIMITATIONS</div>
         <div class="boundary-title">
-          <p class="eyebrow">WHAT THIS RUN MEANS</p>
-          <h2 id="boundary-title">Evidence has a boundary.<br><em>Forge records it.</em></h2>
-          <p class="boundary-intro">This run does not establish model quality. It shows exactly which engineering controls executed and which claims still require independent evidence.</p>
+          <p class="eyebrow">SCOPE OF THIS DEMONSTRATION</p>
+          <h2 id="boundary-title">What this run<br><em>establishes.</em></h2>
+          <p class="boundary-intro">The hosted run verifies pipeline execution and artifact integrity. It does not evaluate model quality or establish production safety.</p>
         </div>
         <div class="boundary-grid">
           <article class="established">
-            <span>ESTABLISHED HERE</span>
+            <span>VERIFIED IN THIS RUN</span>
             <ul>
               <li>All 12 pipeline stages completed</li>
-              <li>Release artifacts match their hashes</li>
-              <li>Train and test sources do not overlap</li>
-              <li>Declared governance and contamination controls ran</li>
+              <li>Release artifact hashes verified</li>
+              <li>Zero overlap between train and test sources</li>
+              <li>Declared governance and contamination checks completed</li>
             </ul>
           </article>
           <article class="not-established">
-            <span>NOT ESTABLISHED HERE</span>
+            <span>NOT EVALUATED</span>
             <ul>
               <li>Production model quality</li>
-              <li>Safety for an undeclared use case</li>
-              <li>Human preference or task utility</li>
+              <li>Safety for production use</li>
+              <li>Utility for a specific task</li>
               <li>Complete detection of sensitive data</li>
             </ul>
           </article>
@@ -195,7 +192,7 @@
 
     <footer>
       <div class="brand footer-brand"><span class="brand-glyph" aria-hidden="true"><i></i><i></i><i></i></span><span>FORGE</span></div>
-      <p>Designed and engineered by Pugalenthi Magendran.</p>
+      <p>Built by Pugalenthi Magendran.</p>
       <div><a href="https://github.com/pugalenthi0928/training-data-factory">GitHub</a><a href="/api/docs">API contract</a></div>
     </footer>
   </body>

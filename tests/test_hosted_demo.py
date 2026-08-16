@@ -164,6 +164,6 @@ def test_public_copy_states_claim_boundary_and_avoids_em_dashes() -> None:
     static_dir = Path(__file__).parents[1] / "src" / "forge" / "web_static"
     copy = "\n".join(path.read_text(encoding="utf-8") for path in static_dir.iterdir() if path.is_file())
 
-    assert "No quality claim" in copy
-    assert "not establish model quality" in copy
+    assert "SCOPE OF THIS DEMONSTRATION" in copy
+    assert "does not evaluate model quality or establish production safety" in copy
     assert "—" not in copy

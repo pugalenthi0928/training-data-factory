@@ -57,11 +57,11 @@ function stageLabel(name) {
 }
 
 function metricSummary(metrics) {
-  if (!metrics || typeof metrics !== "object") return "waiting for execution";
+  if (!metrics || typeof metrics !== "object") return "No stage output yet";
   const entries = Object.entries(metrics).filter(([, value]) =>
     ["string", "number", "boolean"].includes(typeof value)
   );
-  if (!entries.length) return "evidence recorded";
+  if (!entries.length) return "Stage complete";
   return entries.slice(0, 2).map(([key, value]) => `${key.replaceAll("_", " ")}: ${value}`).join(" · ");
 }
 
@@ -185,7 +185,7 @@ async function startRun() {
   renderStages();
   elements.completedCount.textContent = "0";
   elements.progressBar.className = "";
-  setMessage("Submitting a bounded run to the real Forge worker.");
+  setMessage("Starting Forge.");
 
   try {
     const response = await api("/api/runs", {
@@ -196,7 +196,7 @@ async function startRun() {
     const body = await response.json();
     state.jobId = body.job_id;
     sessionStorage.setItem("forgeJobId", state.jobId);
-    setMessage(body.reused ? "Reopening the matching content-addressed run." : "Run accepted. Reading stage events now.");
+    setMessage(body.reused ? "An existing run matches these inputs." : "Run accepted. Waiting for stage events.");
     await pollRun();
   } catch (error) {
     state.running = false;
@@ -210,7 +210,7 @@ function updateStatus(status) {
   elements.completedCount.textContent = String(status.completed_stages);
   elements.progressBar.className = `progress-${status.completed_stages}`;
   if (status.status === "queued") {
-    setMessage("Queued behind the current bounded run.");
+    setMessage("Queued. One public run is already in progress.");
   } else if (status.status === "running") {
     const stage = status.current_stage ? stageLabel(status.current_stage) : "pipeline";
     setMessage(`Running ${stage}. ${status.completed_stages} of ${status.total_stages} stages complete.`);
@@ -226,7 +226,7 @@ async function pollRun() {
     if (status.status === "succeeded") {
       state.running = false;
       updateRunAvailability();
-      setMessage("Verified release complete. The full evidence bundle is ready.");
+      setMessage("Run complete. Release verified and files ready.");
       await showResult(status);
       return;
     }
@@ -295,7 +295,7 @@ async function loadArtifact(artifact, selectedButton) {
   });
   elements.viewerFilename.textContent = artifact.filename;
   elements.viewerSize.textContent = formatBytes(artifact.bytes);
-  elements.artifactContent.textContent = "Loading verified artifact...";
+  elements.artifactContent.textContent = "Loading file...";
   try {
     const response = await api(`/api/runs/${state.jobId}/artifacts/${artifact.key}`);
     const raw = await response.text();
@@ -303,7 +303,7 @@ async function loadArtifact(artifact, selectedButton) {
       elements.artifactContent.textContent = JSON.stringify(JSON.parse(raw), null, 2);
     } else if (artifact.media_type === "application/x-ndjson") {
       const rows = raw.split("\n").filter(Boolean).map((line) => JSON.parse(line));
-      elements.artifactContent.textContent = rows.length ? rows.map((row) => JSON.stringify(row, null, 2)).join("\n\n") : "No quarantined records.";
+      elements.artifactContent.textContent = rows.length ? rows.map((row) => JSON.stringify(row, null, 2)).join("\n\n") : "No records in this file.";
     } else {
       elements.artifactContent.textContent = raw;
     }
@@ -353,7 +353,7 @@ async function initialise() {
     updateRunAvailability();
     await restoreRun();
   } catch (error) {
-    setMessage(`Could not load the demonstration contract. ${error.message}`, true);
+    setMessage(`Could not load the demo. ${error.message}`, true);
   }
 }
 
