@@ -123,8 +123,8 @@ PRESETS: Mapping[str, Preset] = {
     "release-controls": Preset(
         slug="release-controls",
         label="AI release controls",
-        eyebrow="PROVENANCE + EVALUATION",
-        description="Trace two operating documents through governance, curation, isolation and release verification.",
+        eyebrow="POLICIES / EVALUATION",
+        description="Run two policy documents through source governance, curation, source-isolated splitting and release verification.",
         documents=(
             (
                 "Release policy",
@@ -139,8 +139,8 @@ PRESETS: Mapping[str, Preset] = {
     "incident-operations": Preset(
         slug="incident-operations",
         label="Incident operations",
-        eyebrow="RUNBOOKS + TRACEABILITY",
-        description="Turn two operational runbooks into an auditable smoke release without losing source lineage.",
+        eyebrow="RUNBOOKS / PROVENANCE",
+        description="Process two incident runbooks while preserving document provenance and source-isolated splitting.",
         documents=(
             (
                 "Detection and triage",
@@ -155,8 +155,8 @@ PRESETS: Mapping[str, Preset] = {
     "regulated-change": Preset(
         slug="regulated-change",
         label="Regulated change",
-        eyebrow="APPROVALS + EVIDENCE",
-        description="Exercise rights, privacy, quality and release controls on a compliance-oriented change process.",
+        eyebrow="CHANGE CONTROL / EVIDENCE",
+        description="Run two change-control documents through rights, privacy, quality and release checks.",
         documents=(
             (
                 "Change assessment",
