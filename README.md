@@ -10,6 +10,8 @@ Forge turns documents into task-specific examples and then produces a verifiable
 
 **[Run Forge live](https://training-data-factory-production.up.railway.app/) | [Evidence](https://pugalenthi0928.github.io/training-data-factory/) | [Technical controls](https://pugalenthi0928.github.io/training-data-factory/technical.html) | [Engineering roadmap](docs/engineering-roadmap.md)**
 
+**Recruiter pack:** [three-minute demo](docs/three-minute-demo.md) · [threat model](docs/threat-model.md) · [changelog](CHANGELOG.md)
+
 The repository now includes a hosted FastAPI demonstration that invokes the real Python workflow, streams its 12-stage event trace, verifies the release, and serves an allowlisted evidence bundle. Public runs are deterministic smoke releases. They prove the declared controls execute, not that a model is production-ready.
 
 ## Current status
